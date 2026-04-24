@@ -56,5 +56,40 @@ export const AIService = {
       console.error("AI Bridge Extraction Error:", err.message);
       throw new Error("AI Service failed to parse document");
     }
+  },
+
+  /**
+   * Generates the next question for an AI-led mock interview.
+   */
+  async generateInterviewQuestion(context) {
+    try {
+      const response = await axios.post(`${AI_URL}/interview/next-question`, context);
+      return response.data.question;
+    } catch (error) {
+      console.error("AI Interview Question Error:", error.message);
+      return "Tell me about yourself and your background in this field."; // Fallback
+    }
+  },
+
+  /**
+   * Analyzes the full interview transcript.
+   */
+  async analyzeInterviewTranscript(transcript) {
+    try {
+      const response = await axios.post(`${AI_URL}/interview/analyze`, { transcript });
+      return {
+        overallScore: response.data.score || 70,
+        analysis: response.data.analysis || {},
+        feedback: response.data.feedback || "Good performance, but could improve in technical depth."
+      };
+    } catch (error) {
+      console.error("AI Interview Analysis Error:", error.message);
+      return {
+        overallScore: 65,
+        analysis: { technical: 60, communication: 70 },
+        feedback: "Analysis currently unavailable. (Service Offline)"
+      };
+    }
   }
 };
+

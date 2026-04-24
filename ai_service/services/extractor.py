@@ -89,4 +89,57 @@ class GapsExtractor:
             print(f"Readiness Analysis Error: {e}")
             raise e
 
+    async def generate_next_question(self, context: dict) -> str:
+        prompt = f"""
+        Role: Senior Technical Interviewer
+        Context: Conducting a {context.get('mode', 'Technical')} interview for {context.get('studentName', 'a student')}.
+        
+        Transcript so far:
+        {json.dumps(context.get('transcript', []), indent=2)}
+        
+        Based on the transcript, ask the next relevant question. 
+        If there is no transcript, ask a good starting question for a {context.get('mode')} interview.
+        Be professional, brief, and probing.
+        """
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_id,
+                contents=prompt
+            )
+            return response.text.strip()
+        except Exception as e:
+            print(f"Interview Question Error: {e}")
+            return "Could you elaborate on your most challenging technical project?"
+
+    async def analyze_interview(self, transcript: str) -> dict:
+        prompt = f"""
+        Analyze this interview transcript and provide a structured JSON report.
+        
+        TRANSCRIPT:
+        {transcript}
+        
+        Evaluate:
+        1. Overall Score (0-100)
+        2. Breakdown (0-100 for Technical, Communication, Confidence, Problem Solving)
+        3. Detailed feedback (1-2 paragraphs)
+        """
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_id,
+                contents=prompt,
+                config={
+                    'response_mime_type': 'application/json'
+                }
+            )
+            data = json.loads(response.text)
+            # Ensure it matches the expected structure
+            return {
+                "score": data.get("score") or data.get("overall_score") or 70,
+                "analysis": data.get("analysis") or data.get("breakdown") or {"technical": 70, "communication": 70},
+                "feedback": data.get("feedback") or "Good performance overall."
+            }
+        except Exception as e:
+            print(f"Interview Analysis Error: {e}")
+            return {"score": 65, "analysis": {"technical": 60, "communication": 70}, "feedback": "Manual review recommended."}
+
 extractor_service = GapsExtractor()

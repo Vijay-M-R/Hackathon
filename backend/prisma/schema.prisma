@@ -29,6 +29,10 @@ model User {
   assessmentAttempts  AssessmentAttempt[]
   appliedDrives       PlacementDrive[] @relation("DriveApplications")
   notifications       Notification[]
+  
+  // New: Interview relationships
+  interviewsAsStudent MockInterview[]  @relation("StudentInterviews")
+  interviewsAsFaculty MockInterview[]  @relation("FacultyInterviews")
 }
 
 model Notification {
@@ -156,9 +160,63 @@ model StudentProfile {
   branch          String?
   semester        Int?
   readinessScore  Float?
+  interviewScore  Float?  @default(0)
   aiFeedback      String?
   placementStatus String  @default("UNPLACED")
   User            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum InterviewType {
+  FACULTY
+  AI
+}
+
+enum InterviewMode {
+  TECHNICAL
+  HR
+  BEHAVIORAL
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model MockInterview {
+  id           String          @id @default(uuid())
+  title        String
+  type         InterviewType   @default(AI)
+  mode         InterviewMode   @default(TECHNICAL)
+  status       InterviewStatus @default(SCHEDULED)
+  scheduledAt  DateTime        @default(now())
+  
+  studentId    String
+  student      User            @relation("StudentInterviews", fields: [studentId], references: [id])
+  
+  facultyId    String?
+  faculty      User?           @relation("FacultyInterviews", fields: [facultyId], references: [id])
+  
+  overallScore Float           @default(0)
+  analysis     Json?           
+  feedback     String?
+  
+  messages     InterviewMessage[]
+  
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model InterviewMessage {
+  id          String        @id @default(uuid())
+  interviewId String
+  interview   MockInterview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  
+  senderRole  String        
+  senderName  String
+  text        String        @db.Text
+  
+  createdAt   DateTime      @default(now())
 }
 
 enum Role {

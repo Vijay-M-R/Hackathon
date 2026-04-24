@@ -60,5 +60,21 @@ async def predict_readiness(data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/interview/next-question")
+async def next_question(context: dict):
+    try:
+        question = await extractor_service.generate_next_question(context)
+        return {"question": question}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/interview/analyze")
+async def analyze_interview(data: dict):
+    try:
+        analysis = await extractor_service.analyze_interview(data.get("transcript", ""))
+        return analysis
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

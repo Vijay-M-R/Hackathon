@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import {
   Users, TrendingUp, AlertTriangle, Trophy, Search, ArrowUpRight,
-  CalendarDays, Sparkles, ClipboardList,
+  CalendarDays, Sparkles, ClipboardList, MessageSquare,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { FacultyAPI, AssessmentAPI } from "@/api";
@@ -132,12 +132,16 @@ const FacultyDashboard = () => {
       </div>
 
       {/* ── Stat cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
         <StatCard icon={Users} label="Total Students" value={inScope.length} change="In current scope" delay={0} accent="primary" />
         <StatCard icon={TrendingUp} label="Avg readiness" value={`${avg}%`} change="Class average" delay={0.05} accent="success" />
         <StatCard icon={Trophy} label="Top performers" value={top} change="Score ≥ 80%" delay={0.1} accent="info" />
         <StatCard icon={AlertTriangle} label="At risk" value={atRisk} change="Score < 60%" delay={0.15} accent="destructive" />
+        <Link to="/faculty/interview" className="block">
+          <StatCard icon={MessageSquare} label="Mock Interviews" value="Live" change="Start session" delay={0.2} accent="primary" />
+        </Link>
       </div>
+
 
       {/* ── Charts ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">

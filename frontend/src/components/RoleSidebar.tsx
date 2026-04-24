@@ -14,6 +14,7 @@ import {
   ListChecks,
   ClipboardList,
   UserCog,
+  MessageSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -45,6 +46,7 @@ const MENUS: Record<Role, MenuGroup[]> = {
         { title: "My Tests", url: "/student/tests", icon: BookOpen },
         { title: "Training", url: "/student/training", icon: Sparkles },
         { title: "Drives", url: "/student/drives", icon: Briefcase },
+        { title: "Mock Interview", url: "/student/interview", icon: MessageSquare },
       ],
     },
   ],
@@ -56,6 +58,7 @@ const MENUS: Record<Role, MenuGroup[]> = {
         { title: "Question Bank", url: "/faculty/questions", icon: FileText },
         { title: "Schedule Tests", url: "/faculty/schedule", icon: CalendarDays },
         { title: "Manual Review", url: "/faculty/review", icon: ClipboardList },
+        { title: "Mock Interviews", url: "/faculty/interview", icon: MessageSquare },
       ],
     },
     {

@@ -32,8 +32,11 @@ import PlacementTrends from "./pages/placement/PlacementTrends";
 
 import Reports from "./pages/Reports";
 import StudentProfile from "./pages/StudentProfile";
+import MockInterview from "./pages/MockInterview";
+import InterviewRoom from "./pages/InterviewRoom";
 
 import NotFound from "./pages/NotFound";
+
 
 const queryClient = new QueryClient();
 
@@ -59,9 +62,14 @@ const App = () => (
             <Route path="/student/training" element={<ProtectedRoute allowedRoles={["STUDENT"]}><StudentTraining /></ProtectedRoute>} />
             <Route path="/student/drives" element={<ProtectedRoute allowedRoles={["STUDENT"]}><StudentDrives /></ProtectedRoute>} />
             <Route path="/student/test/:id" element={<ProtectedRoute allowedRoles={["STUDENT"]}><TakeTest /></ProtectedRoute>} />
+            <Route path="/student/interview" element={<ProtectedRoute allowedRoles={["STUDENT"]}><MockInterview /></ProtectedRoute>} />
+            <Route path="/student/interview/:id" element={<ProtectedRoute allowedRoles={["STUDENT"]}><InterviewRoom /></ProtectedRoute>} />
 
             {/* Faculty */}
             <Route path="/faculty" element={<ProtectedRoute allowedRoles={["FACULTY"]}><FacultyDashboard /></ProtectedRoute>} />
+            <Route path="/faculty/interview" element={<ProtectedRoute allowedRoles={["FACULTY"]}><MockInterview /></ProtectedRoute>} />
+            <Route path="/faculty/interview/:id" element={<ProtectedRoute allowedRoles={["FACULTY"]}><InterviewRoom /></ProtectedRoute>} />
+
             <Route path="/faculty/students/:id" element={<ProtectedRoute allowedRoles={["FACULTY"]}><StudentProfile role="faculty" /></ProtectedRoute>} />
             <Route path="/faculty/schedule" element={<ProtectedRoute allowedRoles={["FACULTY"]}><ScheduleTests /></ProtectedRoute>} />
             <Route path="/faculty/review" element={<ProtectedRoute allowedRoles={["FACULTY"]}><ManualReview /></ProtectedRoute>} />

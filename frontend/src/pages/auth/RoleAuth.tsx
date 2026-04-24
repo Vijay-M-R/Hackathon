@@ -48,6 +48,7 @@ export const RoleAuth = ({ role, title, subtitle, icon: Icon, redirectTo, accent
       
       localStorage.setItem("accessToken", token);
       localStorage.setItem("userRole", user.role);
+      localStorage.setItem("user", JSON.stringify(user));
 
       toast.success(`Welcome back, ${accentLabel}`);
       setTimeout(() => navigate(redirectTo), 350);
