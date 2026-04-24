@@ -42,8 +42,8 @@ export const StudentService = {
 
     // Helper to map Assessment to Dashboard Categories
     const getCategory = (assessment) => {
-      const type = (assessment.type || "").toLowerCase();
-      const subject = (assessment.subject || "").toLowerCase();
+      const type = (assessment?.type || "").toLowerCase();
+      const subject = (assessment?.subject || "").toLowerCase();
       
       // Aptitude
       if (subject.includes("aptitude") || subject.includes("logic") || subject.includes("quant") || subject.includes("math")) 
@@ -109,11 +109,11 @@ export const StudentService = {
     });
 
     // 3. Identify Weak Areas (Subjects with avg score < 60)
-    const subjectsList = [...new Set(attempts.map(a => a.assessment.subject || "General"))];
+    const subjectsList = [...new Set(attempts.map(a => a.assessment?.subject || "General"))];
     const weakAreas = subjectsList.map(sub => {
-      const subAttempts = attempts.filter(a => (a.assessment.subject || "General") === sub);
+      const subAttempts = attempts.filter(a => (a.assessment?.subject || "General") === sub);
       const avg = subAttempts.reduce((s, a) => s + a.score, 0) / subAttempts.length;
-      const cat = getCategory(subAttempts[0].assessment);
+      const cat = getCategory(subAttempts[0]?.assessment);
       return {
         topic: sub,
         category: labels[cat].toUpperCase(),
