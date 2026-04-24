@@ -2,11 +2,12 @@ import { InterviewService } from "../services/interview.service.js";
 import { AIService } from "../services/ai.service.js";
 import { prisma } from "../config/db.js";
 import { success, error } from "../utils/response.js";
+import { getIO } from "../socket/socket.js";
 
 export const InterviewController = {
   async startInterview(req, res) {
     try {
-      const { title, type, mode, facultyId, studentId: bodyStudentId } = req.body;
+      const { title, type, mode, facultyId, studentId: bodyStudentId, scheduledAt } = req.body;
       
       const studentId = req.user.role === "FACULTY" ? bodyStudentId : req.user.id;
       const finalFacultyId = req.user.role === "FACULTY" ? req.user.id : (type === "FACULTY" ? facultyId : null);
@@ -20,7 +21,8 @@ export const InterviewController = {
         type,
         mode,
         studentId,
-        facultyId: finalFacultyId
+        facultyId: finalFacultyId,
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date()
       });
 
       if (type === "AI") {
@@ -100,7 +102,15 @@ export const InterviewController = {
 
   async finishInterview(req, res) {
     try {
-      const interview = await InterviewService.endAndAnalyze(req.params.id);
+      const interviewId = req.params.id;
+      const interview = await InterviewService.endAndAnalyze(interviewId);
+      
+      // Notify other participants via socket
+      const io = getIO();
+      if (io) {
+        io.to(interviewId).emit("interview_ended", { interviewId, analysis: interview.analysis });
+      }
+
       return success(res, interview, "Interview analyzed");
     } catch (err) {
       return error(res, "Failed to analyze interview", 500, err);

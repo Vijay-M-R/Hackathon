@@ -67,7 +67,7 @@ export const AIService = {
       return response.data.question;
     } catch (error) {
       console.error("AI Interview Question Error:", error.message);
-      return "Tell me about yourself and your background in this field."; // Fallback
+      throw new Error("Failed to generate AI question.");
     }
   },
 
@@ -80,16 +80,11 @@ export const AIService = {
       return {
         overallScore: response.data.score || 70,
         analysis: response.data.analysis || {},
-        feedback: response.data.feedback || "Good performance, but could improve in technical depth."
+        feedback: response.data.feedback || "Analysis complete based on transcript."
       };
     } catch (error) {
       console.error("AI Interview Analysis Error:", error.message);
-      return {
-        overallScore: 65,
-        analysis: { technical: 60, communication: 70 },
-        feedback: "Analysis currently unavailable. (Service Offline)"
-      };
+      throw new Error("Interview analysis failed.");
     }
   }
 };
-

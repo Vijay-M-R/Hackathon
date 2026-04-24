@@ -1,6 +1,8 @@
 import { Server } from "socket.io";
 import { InterviewService } from "../services/interview.service.js";
 
+let ioInstance;
+
 export function setupSocket(server) {
   const io = new Server(server, {
     cors: {
@@ -8,6 +10,8 @@ export function setupSocket(server) {
       methods: ["GET", "POST"]
     }
   });
+
+  ioInstance = io;
 
   io.on("connection", (socket) => {
     console.log("New client connected", socket.id);
@@ -34,3 +38,5 @@ export function setupSocket(server) {
 
   return io;
 }
+
+export const getIO = () => ioInstance;
