@@ -7,10 +7,14 @@ async function main() {
   // 1. Clean Database in Reverse Topological Order
   console.log("🧹 Clearing existing data...");
   await prisma.notification.deleteMany();
+  await prisma.trainingTestResult.deleteMany();
+  await prisma.trainingModuleProgress.deleteMany();
   await prisma.assessmentAttempt.deleteMany();
   await prisma.assessment.deleteMany();
   await prisma.question.deleteMany();
   await prisma.tag.deleteMany();
+  await prisma.interviewMessage.deleteMany();
+  await prisma.mockInterview.deleteMany();
   
   const placementDrives = await prisma.placementDrive.findMany();
   for (const p of placementDrives) {

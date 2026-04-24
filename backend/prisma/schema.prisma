@@ -219,6 +219,30 @@ model InterviewMessage {
   createdAt   DateTime      @default(now())
 }
 
+model TrainingModuleProgress {
+  id               String   @id @default(uuid())
+  userId           String
+  moduleKey        String
+  questionsRead    Int      @default(0)
+  readQuestionIds  String[] @default([])
+  completed        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([userId, moduleKey])
+}
+
+model TrainingTestResult {
+  id           String   @id @default(uuid())
+  userId       String
+  moduleKey    String
+  score        Float
+  correctCount Int
+  totalCount   Int
+  answers      Json
+  createdAt    DateTime @default(now())
+}
+
 enum Role {
   STUDENT
   FACULTY

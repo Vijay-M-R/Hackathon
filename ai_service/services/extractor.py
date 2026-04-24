@@ -28,6 +28,10 @@ class AssessmentExtraction(BaseModel):
     topic: str = Field(..., description="The specific topic or chapter")
     questions: List[QuestionInfo] = []
 
+class TestGeneration(BaseModel):
+    durationMinutes: int = Field(..., description="Estimated time to complete the test in minutes")
+    questions: List[QuestionInfo] = Field(..., description="List of generated questions")
+
 class GapsExtractor:
     def __init__(self):
         self.gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -235,6 +239,72 @@ class GapsExtractor:
             }
         except Exception as e:
             print(f"Groq Interview Analysis Error: {e}")
+            raise e
+
+    async def generate_test_questions(self, subject: str, topic: str, count: int = 10) -> dict:
+        prompt = f"""
+        You are an expert examiner. Generate exactly {count} multiple choice questions (MCQs) for a test.
+        The subject is "{subject}" and the specific topic is "{topic}".
+        Make the questions a mix of EASY, MEDIUM, and HARD.
+        
+        Return a JSON response with:
+        {{
+            "durationMinutes": estimated_time_to_complete,
+            "questions": [
+                {{
+                    "question_text": "...",
+                    "answer": "Last In First Out (LIFO) operations",
+                    "options": [
+                        "Last In First Out (LIFO) operations", 
+                        "First In First Out (FIFO) operations", 
+                        "Searching for a specific element", 
+                        "Sorting a list of elements"
+                    ],
+                    "difficulty": "MEDIUM",
+                    "type": "MCQ"
+                }}
+            ]
+        }}
+        
+        CRITICAL RULES: 
+        1. "options" must be an array of exactly 4 strings. Do NOT prefix them with A., B., C., D.
+        2. "answer" MUST be the exact exact full text string of the correct option. Do NOT just output "A" or "B". The grading system will fail if "answer" is not an exact exact duplicate of the option string!
+        """
+        
+        try:
+            print(f"Generating {count} questions for {subject} - {topic}...")
+            # Try Gemini first if possible, but Groq is usually better for strict JSON.
+            # Using Groq here for speed and strict JSON formatting.
+            if self.groq_client:
+                completion = self.groq_client.chat.completions.create(
+                    model=self.groq_model,
+                    messages=[
+                        {"role": "system", "content": "You are a test generator. Output only valid JSON matching the schema."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    response_format={"type": "json_object"}
+                )
+                data = json.loads(completion.choices[0].message.content)
+                # Validate with Pydantic
+                validated = TestGeneration.model_validate(data)
+                return validated.model_dump()
+            else:
+                # Fallback to Gemini
+                import asyncio
+                await asyncio.sleep(1)
+                response = self.gemini_client.models.generate_content(
+                    model=self.gemini_model,
+                    contents=prompt,
+                    config={
+                        'response_mime_type': 'application/json',
+                        'response_schema': TestGeneration,
+                    }
+                )
+                data = json.loads(response.text)
+                return TestGeneration.model_validate(data).model_dump()
+                
+        except Exception as e:
+            print(f"AI Test Generation Error: {e}")
             raise e
 
 extractor_service = GapsExtractor()

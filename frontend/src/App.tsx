@@ -18,6 +18,8 @@ import StudentTests from "./pages/student/StudentTests";
 import StudentTraining from "./pages/student/StudentTraining";
 import StudentDrives from "./pages/student/StudentDrives";
 import TakeTest from "./pages/student/TakeTest";
+import TrainingModulePage from "./pages/student/TrainingModulePage";
+import TrainingTestPage from "./pages/student/TrainingTestPage";
 
 import FacultyDashboard from "./pages/faculty/FacultyDashboard";
 import ScheduleTests from "./pages/faculty/ScheduleTests";
@@ -62,6 +64,8 @@ const App = () => (
             <Route path="/student/training" element={<ProtectedRoute allowedRoles={["STUDENT"]}><StudentTraining /></ProtectedRoute>} />
             <Route path="/student/drives" element={<ProtectedRoute allowedRoles={["STUDENT"]}><StudentDrives /></ProtectedRoute>} />
             <Route path="/student/test/:id" element={<ProtectedRoute allowedRoles={["STUDENT"]}><TakeTest /></ProtectedRoute>} />
+            <Route path="/student/training/:moduleKey" element={<ProtectedRoute allowedRoles={["STUDENT"]}><TrainingModulePage /></ProtectedRoute>} />
+            <Route path="/student/training/:moduleKey/test" element={<ProtectedRoute allowedRoles={["STUDENT"]}><TrainingTestPage /></ProtectedRoute>} />
             <Route path="/student/interview" element={<ProtectedRoute allowedRoles={["STUDENT"]}><MockInterview /></ProtectedRoute>} />
             <Route path="/student/interview/:id" element={<ProtectedRoute allowedRoles={["STUDENT"]}><InterviewRoom /></ProtectedRoute>} />
 

@@ -244,14 +244,18 @@ const ScheduleTests = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Syllabus Subject</Label>
-                  <Select value={subject} onValueChange={setSubject}>
-                    <SelectTrigger className="bg-secondary/50">
-                      <SelectValue placeholder="Select Subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(me?.subjects ?? []).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <Input 
+                      value={subject} 
+                      onChange={(e) => setSubject(e.target.value)} 
+                      placeholder="e.g. Data Structures" 
+                      className="bg-secondary/50" 
+                      list="faculty-subjects"
+                    />
+                    <datalist id="faculty-subjects">
+                      {(me?.subjects ?? []).map((s) => <option key={s} value={s} />)}
+                    </datalist>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Test Category</Label>
