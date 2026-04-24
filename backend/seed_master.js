@@ -2,30 +2,23 @@ import { prisma } from "./src/config/db.js";
 import { hashPassword } from "./src/utils/hash.js";
 
 async function main() {
-  console.log("🚀 Starting Clean Master Data Seed (Indian Ecosystem)...");
+  console.log("🚀 Starting Clean Master Data Seed (Indian Ecosystem - 6 Months History)...");
 
   // 0. CLEAR EXISTING DATA (Ordered for constraints)
   console.log("🧹 Clearing old data...");
   try {
-    // Level 4 (Dependencies of dependencies)
     await prisma.interviewMessage.deleteMany({});
     await prisma.notification.deleteMany({});
     await prisma.assessmentAttempt.deleteMany({});
-    
-    // Level 3
     await prisma.mockInterview.deleteMany({});
     await prisma.inboundRequest.deleteMany({});
     await prisma.placementDrive.deleteMany({});
     await prisma.trainingTestResult.deleteMany({});
     await prisma.trainingModuleProgress.deleteMany({});
-
-    // Level 2
     await prisma.assessment.deleteMany({});
     await prisma.question.deleteMany({});
     await prisma.tag.deleteMany({});
     await prisma.studentProfile.deleteMany({});
-    
-    // Level 1
     await prisma.user.deleteMany({ where: { role: { in: ["STUDENT", "COMPANY", "PLACEMENT", "FACULTY"] } } });
     await prisma.company.deleteMany({});
   } catch (err) {
@@ -36,7 +29,7 @@ async function main() {
   const collegeName = "Indian Institute of Placement & Excellence (IIPE)";
 
   // 1. Placement Officer
-  await prisma.user.upsert({
+  const po = await prisma.user.upsert({
     where: { email: "po@iipe.edu.in" },
     update: { collegeName },
     create: {
@@ -122,17 +115,84 @@ async function main() {
         id: usn,
         branch: branches[i % 4],
         cgpa: parseFloat((7.0 + Math.random() * 2.5).toFixed(2)),
-        readinessScore: Math.floor(55 + Math.random() * 40),
+        readinessScore: 0, // Will update after attempts
         semester: 7,
         placementStatus: "APPLIED",
-        aiFeedback: "Strong fundamentals in Data Structures. Recommended to focus on OS and DBMS for service-based companies."
+        aiFeedback: "Student profile initialized. Awaiting diagnostic assessment results."
       }
     });
     students.push(user);
   }
   console.log(`✅ ${students.length} Indian Student profiles seeded.`);
 
-  // 5. Recruitment Drives
+  // 5. Assessments & Historical Attempts (6 Months)
+  console.log("📊 Generating 6-month historical performance data...");
+  const assessmentTypes = ["APTITUDE", "CORE", "SOFT_SKILLS"];
+  const assessments = [];
+
+  for (const type of assessmentTypes) {
+    const assessment = await prisma.assessment.create({
+      data: {
+        title: `${type.charAt(0) + type.slice(1).toLowerCase()} Diagnostic Test`,
+        type: type,
+        subject: type === "CORE" ? "Computer Science" : "General",
+        scheduledAt: new Date(),
+        duration: 60,
+        createdById: po.id
+      }
+    });
+    assessments.push(assessment);
+  }
+
+  const now = new Date();
+  for (const student of students) {
+    let avgAptitude = 0, avgCore = 0, avgSoft = 0;
+    
+    // Create ~15 attempts per student over 6 months
+    for (let m = 0; m < 6; m++) {
+      for (const assessment of assessments) {
+        const attemptDate = new Date(now);
+        attemptDate.setMonth(now.getMonth() - (5 - m));
+        attemptDate.setDate(Math.floor(Math.random() * 28) + 1);
+
+        const baseScore = 50 + (m * 5); // Improving trend
+        const score = Math.min(100, baseScore + (Math.random() * 20));
+        
+        await prisma.assessmentAttempt.create({
+          data: {
+            userId: student.id,
+            assessmentId: assessment.id,
+            score: score,
+            correctCount: Math.floor((score / 100) * 50),
+            totalCount: 50,
+            timeTaken: 1800 + Math.floor(Math.random() * 1200),
+            createdAt: attemptDate,
+            answers: { mock: true }
+          }
+        });
+
+        if (assessment.type === "APTITUDE") avgAptitude = score;
+        if (assessment.type === "CORE") avgCore = score;
+        if (assessment.type === "SOFT_SKILLS") avgSoft = score;
+      }
+    }
+
+    // Update profile with latest averages/scores
+    await prisma.studentProfile.update({
+      where: { userId: student.id },
+      data: {
+        aptitudeScore: parseFloat(avgAptitude.toFixed(2)),
+        coreScore: parseFloat(avgCore.toFixed(2)),
+        softSkillsScore: parseFloat(avgSoft.toFixed(2)),
+        codingScore: parseFloat((avgCore * 0.9).toFixed(2)),
+        readinessScore: parseFloat(((avgAptitude + avgCore + avgSoft) / 3).toFixed(2)),
+        aiFeedback: `Showing steady improvement over 6 months. Strong in ${avgAptitude > 80 ? 'Quantitative Aptitude' : 'Logical Reasoning'}. Recommended to focus on advanced ${avgCore < 70 ? 'System Design' : 'Algorithm Optimization'}.`
+      }
+    });
+  }
+  console.log("✅ 6-month historical attempts and profiles updated.");
+
+  // 6. Recruitment Drives
   const driveData = [
     { title: "TATA Digital Campus 2025", role: "Graduate Engineer Trainee", companyId: companyMap["TATA Consultancy Services (TCS)"], salary: "12 LPA", status: "ACTIVE", location: "Block A Seminar Hall" },
     { title: "Reliance JIO Hiring", role: "Software Developer", companyId: companyMap["Reliance Industries"], salary: "18 LPA", status: "UPCOMING", location: "Auditorium" },
@@ -154,7 +214,7 @@ async function main() {
   }
   console.log("✅ Recruitment drives seeded.");
 
-  // 6. Inbound Requests
+  // 7. Inbound Requests
   await prisma.inboundRequest.createMany({
     data: [
       {
@@ -183,10 +243,8 @@ async function main() {
   });
   console.log("✅ Indian Partnership requests seeded.");
 
-  console.log("\n✨ Indian Ecosystem successfully seeded!");
-  console.log("   - PO: po@iipe.edu.in / password123");
-  console.log("   - Recruiter: recruiter@tcs.com / password123");
-  console.log("   - Student: rahul.deshmukh@gmail.com / password123");
+  console.log("\n✨ 6-Month Indian Ecosystem successfully seeded!");
+  console.log("   - Credentials unchanged. Use po@iipe.edu.in, recruiter@tcs.com, or rahul.deshmukh@gmail.com");
 }
 
 main()

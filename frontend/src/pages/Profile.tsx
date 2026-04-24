@@ -149,18 +149,6 @@ const Profile = () => {
                       })}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Semester</Label>
-                    <Input 
-                      disabled={!canEdit}
-                      type="number"
-                      value={formData.studentProfile?.semester || ""}
-                      onChange={e => setFormData({
-                        ...formData, 
-                        studentProfile: { ...formData.studentProfile, semester: parseInt(e.target.value) }
-                      })}
-                    />
-                  </div>
                 </>
               )}
             </div>
