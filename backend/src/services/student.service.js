@@ -30,18 +30,48 @@ export const StudentService = {
       ? attempts.reduce((a, b) => a + b.score, 0) / totalTests 
       : 0;
 
+    // Fetch user for department info
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { department: true }
+    });
+
+    const dept = (user?.department || profile?.branch || "CSE").toUpperCase();
+    const isCSE = dept === "CSE" || dept === "COMPUTER SCIENCE";
+    const isEC = dept === "EC" || dept === "ECE" || dept === "ELECTRONICS";
+
     // Helper to map Assessment to Dashboard Categories
     const getCategory = (assessment) => {
       const type = (assessment.type || "").toLowerCase();
       const subject = (assessment.subject || "").toLowerCase();
       
-      if (type === "coding" || subject.includes("prog") || subject.includes("coding") || subject.includes("java") || subject.includes("python") || subject.includes("dsa")) 
-        return "coding";
+      // Aptitude
       if (subject.includes("aptitude") || subject.includes("logic") || subject.includes("quant") || subject.includes("math")) 
         return "aptitude";
+      
+      // Soft Skills
       if (subject.includes("soft") || subject.includes("comm") || subject.includes("english") || subject.includes("hr")) 
         return "soft";
-      return "core"; // Default to Core CS (OS, DBMS, CN, etc.)
+
+      // Domain/Coding slot
+      if (isCSE) {
+        if (type === "coding" || subject.includes("prog") || subject.includes("coding") || subject.includes("java") || subject.includes("python") || subject.includes("dsa")) 
+          return "coding";
+      } else {
+        // For non-CSE, treat domain-specific technical subjects in the 'coding' slot
+        if (subject.includes("embedded") || subject.includes("vlsi") || subject.includes("signal") || subject.includes("circuit") || subject.includes("analog") || subject.includes("digital") || subject.includes("micro") || subject.includes("control"))
+          return "coding";
+      }
+      
+      return "core"; // Default to Core (Core CS for CSE, Core Domain for others)
+    };
+
+    // Define Dynamic Labels
+    const labels = {
+      aptitude: "Aptitude",
+      coding: isCSE ? "Coding" : "Domain Skills",
+      core: isCSE ? "Core CS" : "Core " + dept,
+      soft: "Soft Skills"
     };
 
     // 1. Calculate Skills Progression (Over Time)
@@ -72,26 +102,29 @@ export const StudentService = {
         ? catAttempts.reduce((s, a) => s + a.score, 0) / catAttempts.length 
         : 0;
       return { 
-        skill: cat.charAt(0).toUpperCase() + cat.slice(1), 
+        skill: labels[cat], 
         value: Math.round(value),
         fullMark: 100 
       };
     });
 
     // 3. Identify Weak Areas (Subjects with avg score < 60)
-    const subjects = [...new Set(attempts.map(a => a.assessment.subject || "General"))];
-    const weakAreas = subjects.map(sub => {
+    const subjectsList = [...new Set(attempts.map(a => a.assessment.subject || "General"))];
+    const weakAreas = subjectsList.map(sub => {
       const subAttempts = attempts.filter(a => (a.assessment.subject || "General") === sub);
       const avg = subAttempts.reduce((s, a) => s + a.score, 0) / subAttempts.length;
+      const cat = getCategory(subAttempts[0].assessment);
       return {
         topic: sub,
-        category: getCategory(subAttempts[0].assessment).toUpperCase(),
+        category: labels[cat].toUpperCase(),
         score: Math.round(avg)
       };
     }).filter(s => s.score < 60).slice(0, 3);
 
     return {
       profile,
+      department: dept,
+      labels,
       stats: {
         readiness: profile?.readinessScore ?? 0,
         testsTaken: totalTests,

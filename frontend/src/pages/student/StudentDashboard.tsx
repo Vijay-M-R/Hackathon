@@ -220,10 +220,10 @@ const StudentDashboard = () => {
                   iconType="circle"
                   iconSize={8}
                 />
-                <Area type="monotone" dataKey="aptitude" name="Aptitude" stroke={CHART.aptitude} fill={`url(#grad-aptitude)`} strokeWidth={2} dot={false} />
-                <Area type="monotone" dataKey="coding" name="Coding" stroke={CHART.coding} fill={`url(#grad-coding)`} strokeWidth={2} dot={false} />
-                <Area type="monotone" dataKey="core" name="Core CS" stroke={CHART.core} fill={`url(#grad-core)`} strokeWidth={2} dot={false} />
-                <Area type="monotone" dataKey="soft" name="Soft Skills" stroke={CHART.soft} fill={`url(#grad-soft)`} strokeWidth={2} dot={false} />
+                <Area type="monotone" dataKey="aptitude" name={data?.labels?.aptitude || "Aptitude"} stroke={CHART.aptitude} fill={`url(#grad-aptitude)`} strokeWidth={2} dot={false} />
+                <Area type="monotone" dataKey="coding" name={data?.labels?.coding || "Coding"} stroke={CHART.coding} fill={`url(#grad-coding)`} strokeWidth={2} dot={false} />
+                <Area type="monotone" dataKey="core" name={data?.labels?.core || "Core CS"} stroke={CHART.core} fill={`url(#grad-core)`} strokeWidth={2} dot={false} />
+                <Area type="monotone" dataKey="soft" name={data?.labels?.soft || "Soft Skills"} stroke={CHART.soft} fill={`url(#grad-soft)`} strokeWidth={2} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -241,18 +241,27 @@ const StudentDashboard = () => {
           <p className="text-xs text-muted-foreground mt-0.5 mb-2">Readiness by area</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={data?.skillRadar ?? []}>
+              <RadarChart 
+                data={data?.skillRadar ?? []} 
+                outerRadius="80%" 
+                cx="50%" 
+                cy="50%"
+                margin={{ top: 10, right: 30, bottom: 10, left: 30 }}
+              >
                 <PolarGrid stroke="hsl(224 14% 16%)" />
                 <PolarAngleAxis
                   dataKey="skill"
                   stroke="hsl(220 10% 50%)"
                   fontSize={10}
-                  tick={{ fill: "hsl(220 10% 55%)" }}
+                  tick={{ fill: "hsl(220 10% 60%)" }}
                 />
                 <PolarRadiusAxis
-                  stroke="hsl(224 14% 16%)"
-                  fontSize={9}
-                  tick={{ fill: "hsl(220 10% 40%)" }}
+                  angle={90}
+                  domain={[0, 100]}
+                  tickCount={4}
+                  stroke="transparent"
+                  fontSize={8}
+                  tick={{ fill: "hsl(220 10% 45%)", dy: 3 }}
                 />
                 <Radar
                   name="You"
