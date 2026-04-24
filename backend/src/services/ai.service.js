@@ -72,15 +72,17 @@ export const AIService = {
   },
 
   /**
-   * Analyzes the full interview transcript.
+   * Analyzes the full interview transcript and behavioral data.
    */
-  async analyzeInterviewTranscript(transcript) {
+  async analyzeInterviewTranscript(transcript, behavioralData = null) {
     try {
-      const response = await axios.post(`${AI_URL}/interview/analyze`, { transcript });
+      const response = await axios.post(`${AI_URL}/interview/analyze`, { transcript, behavioralData });
+      const data = response.data;
+      
       return {
-        overallScore: response.data.score || 70,
-        analysis: response.data.analysis || {},
-        feedback: response.data.feedback || "Analysis complete based on transcript."
+        overallScore: typeof data.score === 'number' ? data.score : 70,
+        analysis: data.analysis || {},
+        feedback: data.feedback || "Analysis complete based on transcript."
       };
     } catch (error) {
       console.error("AI Interview Analysis Error:", error.message);

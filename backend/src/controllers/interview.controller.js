@@ -22,7 +22,8 @@ export const InterviewController = {
         mode,
         studentId,
         facultyId: finalFacultyId,
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date()
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
+        isImmediate: req.body.isImmediate
       });
 
       if (type === "AI") {
@@ -103,20 +104,17 @@ export const InterviewController = {
   async finishInterview(req, res) {
     try {
       const interviewId = req.params.id;
-      const interview = await InterviewService.endAndAnalyze(interviewId);
+      const { behavioralData } = req.body || {};
       
-      // Notify other participants via socket
-      const io = getIO();
-      if (io) {
-        io.to(interviewId).emit("interview_ended", { interviewId, analysis: interview.analysis });
-      }
+      // Await analysis for immediate feedback
+      const interview = await InterviewService.endAndAnalyze(interviewId, behavioralData);
 
-      return success(res, interview, "Interview analyzed");
+      return success(res, interview, "Interview submitted and analyzed successfully");
     } catch (err) {
+      console.error("Finish Interview Error:", err);
       return error(res, "Failed to analyze interview", 500, err);
     }
   },
-  
   async getFaculties(req, res) {
     try {
       const faculties = await prisma.user.findMany({
@@ -135,3 +133,4 @@ export const InterviewController = {
     }
   }
 };
+// End of InterviewController

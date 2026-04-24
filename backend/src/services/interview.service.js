@@ -11,7 +11,7 @@ export const InterviewService = {
         mode: data.mode,
         studentId: data.studentId,
         facultyId: data.facultyId,
-        status: data.type === "AI" ? "IN_PROGRESS" : "SCHEDULED",
+        status: (data.type === "AI" || data.isImmediate) ? "IN_PROGRESS" : "SCHEDULED",
         scheduledAt: data.scheduledAt || new Date()
       }
     });
@@ -64,12 +64,12 @@ export const InterviewService = {
     });
   },
 
-  async endAndAnalyze(interviewId) {
+  async endAndAnalyze(interviewId, behavioralData) {
     const interview = await this.getInterview(interviewId);
     if (!interview) throw new Error("Interview not found");
 
     const transcript = interview.messages.map(m => `${m.senderName}: ${m.text}`).join("\n");
-    const analysis = await AIService.analyzeInterviewTranscript(transcript);
+    const analysis = await AIService.analyzeInterviewTranscript(transcript, behavioralData);
 
     const updatedInterview = await prisma.mockInterview.update({
       where: { id: interviewId },
@@ -87,7 +87,9 @@ export const InterviewService = {
       select: { overallScore: true }
     });
 
-    const avgInterviewScore = studentInterviews.reduce((a, b) => a + b.overallScore, 0) / studentInterviews.length;
+    const avgInterviewScore = studentInterviews.length > 0 
+      ? studentInterviews.reduce((a, b) => a + b.overallScore, 0) / studentInterviews.length
+      : analysis.overallScore;
 
     await prisma.studentProfile.update({
       where: { userId: interview.studentId },
@@ -95,6 +97,27 @@ export const InterviewService = {
         interviewScore: avgInterviewScore
       }
     });
+    
+    // Notify user that analysis is ready
+    await NotificationService.createNotification(interview.studentId, {
+      title: "Deep Analysis Ready! 🚀",
+      message: `Your interview report and prep instructions for "${interview.title}" are ready to view.`,
+      type: "SUCCESS"
+    });
+
+    // Notify connected clients via Socket
+    try {
+      const { getIO } = await import("../socket/socket.js");
+      const io = getIO();
+      if (io) {
+        io.to(interview.studentId).emit("notification", {
+          title: "Deep Analysis Ready! 🚀",
+          body: `Your interview report and prep instructions for "${interview.title}" are ready to view.`
+        });
+      }
+    } catch (e) {
+      console.error("Failed to emit socket notification:", e);
+    }
 
     return updatedInterview;
   }

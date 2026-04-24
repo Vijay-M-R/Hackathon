@@ -23,12 +23,12 @@ export function setupSocket(server) {
 
     socket.on("send_message", async (data) => {
       const { interviewId, senderRole, senderName, text } = data;
-      
-      // Save message to DB
       const message = await InterviewService.addMessage(interviewId, senderRole, senderName, text);
-      
-      // Broadcast to others in the room
       io.to(interviewId).emit("receive_message", message);
+    });
+
+    socket.on("send_live_transcript", ({ interviewId, text, senderId }) => {
+      socket.to(interviewId).emit("receive_live_transcript", { text, senderId });
     });
 
     socket.on("disconnect", () => {

@@ -177,34 +177,41 @@ class GapsExtractor:
             print(f"Groq Interview Question Error: {e}")
             raise e
 
-    async def analyze_interview(self, transcript: str) -> dict:
+    async def analyze_interview(self, data: dict) -> dict:
         if not self.groq_client:
             raise Exception("GROQ_API_KEY is not configured. Please add it to your .env file.")
+
+        transcript = data.get("transcript", "")
+        behavioral_data = data.get("behavioralData", {})
 
         # Check if transcript is essentially empty
         if len(transcript.strip()) < 50:
              return {
                 "score": 0,
-                "analysis": {"technical": 0, "communication": 0, "confidence": 0, "problem_solving": 0},
+                "analysis": {"technical": 0, "communication": 0, "confidence": 0, "problemSolving": 0},
                 "feedback": "Interview terminated early or no responses provided. Scoring 0 due to lack of participation."
             }
 
         prompt = f"""
-        CRITICAL EVALUATION REQUIRED: Analyze this interview transcript and provide a HIGHLY CRITICAL structured JSON report.
+        CRITICAL EVALUATION REQUIRED: Analyze this interview transcript and behavioral data to provide a HIGHLY CRITICAL structured JSON report and PREP INSTRUCTIONS.
         
-        RULES:
-        - If the student provides one-word answers or avoids technical questions, score them BELOW 30.
-        - If the student gives no answer or says 'I don't know' repeatedly, score them 0 for that section.
-        - Be honest and harsh if necessary. Do NOT give 'participation points'.
+        BEHAVIORAL DATA (Computer Vision):
+        {json.dumps(behavioral_data)}
         
         TRANSCRIPT:
         {transcript}
+        
+        RULES:
+        - If the student provides one-word answers or avoids technical questions, score them BELOW 30.
+        - Evaluate both their technical answers and their behavioral data (e.g., if stressed, sad, or lacking confidence based on the visual data, address it in feedback).
+        - 'feedback' MUST contain specific, actionable prep instructions for their next interview, addressing both technical gaps and behavioral/posture improvements.
+        - Be honest and harsh if necessary. Do NOT give 'participation points'.
         
         Return JSON with:
         {{
             "score": number (0-100),
             "breakdown": {{ "technical": 0-100, "communication": 0-100, "confidence": 0-100, "problemSolving": 0-100 }},
-            "feedback": "string (brutally honest)"
+            "feedback": "string (brutally honest feedback + actionable prep instructions)"
         }}
         """
         try:

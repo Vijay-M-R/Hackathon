@@ -1,5 +1,6 @@
 import express from "express";
 import { extractTestMetadata, getMe, getStudents, getStudentById, getDashStats, getBatchPerformance, getSkillGaps, uploadMarks } from "../controllers/faculty.controller.js";
+import { InterviewController } from "../controllers/interview.controller.js";
 import { authenticate, authorize } from "../middleware/auth.middleware.js";
 import { upload } from "../middleware/upload.middleware.js";
 
@@ -12,6 +13,7 @@ router.get("/dash/batch-performance", authenticate, authorize("FACULTY"), getBat
 router.get("/dash/skill-gaps", authenticate, authorize("FACULTY"), getSkillGaps);
 
 router.post("/marks", authenticate, authorize("FACULTY"), uploadMarks);
+router.get("/", authenticate, InterviewController.getFaculties);
 
 router.post(
   "/extract-metadata", 

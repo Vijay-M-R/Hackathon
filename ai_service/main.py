@@ -71,7 +71,7 @@ async def next_question(context: dict):
 @app.post("/interview/analyze")
 async def analyze_interview(data: dict):
     try:
-        analysis = await extractor_service.analyze_interview(data.get("transcript", ""))
+        analysis = await extractor_service.analyze_interview(data)
         return analysis
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
