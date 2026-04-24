@@ -1,0 +1,63 @@
+import axios from "axios";
+import { toast } from "sonner";
+
+const API_URL = "http://localhost:3000/api";
+
+export const apiClient = axios.create({
+  baseURL: API_URL,
+  withCredentials: true, 
+});
+
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const res = await axios.get(`${API_URL}/auth/refresh`, { withCredentials: true });
+        const responsePayload = res.data;
+        const { token } = responsePayload.data || responsePayload;
+
+        if (!token) throw new Error("No token returned on refresh");
+
+        localStorage.setItem("accessToken", token);
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        localStorage.removeItem("accessToken");
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export const withFallback = async <T>(apiCall: () => Promise<any>, defaultValue: T): Promise<T> => {
+  try {
+    const response = await apiCall();
+    // If backend returns { success: true, data: T }, unwrap 'data'
+    // Else if axios returns { data: T }, unwrap 'data'
+    const payload = response.data || response;
+    if (payload && typeof payload === 'object' && 'data' in payload && payload.success) {
+      return payload.data;
+    }
+    return payload || defaultValue;
+  } catch (error) {
+    console.error("API Call failed:", error);
+    return defaultValue; 
+  }
+};
