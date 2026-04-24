@@ -42,20 +42,60 @@ async function getWeakTopics(userId) {
  * Questions are pulled from the Question table filtered by subject/topic.
  */
 async function generateModules(userId) {
-  const weakTopics = await getWeakTopics(userId);
+  const attempts = await prisma.assessmentAttempt.findMany({
+    where: { userId },
+    include: { assessment: { select: { subject: true, topic: true } } },
+    orderBy: { createdAt: "desc" }
+  });
 
-  if (!weakTopics.length) {
-    // No weak topics — return all-subject modules from available questions
-    const subjects = await prisma.question.findMany({
+  // Calculate actual averages and track most recent subjects
+  const subjectMap = {};
+  for (const a of attempts) {
+    const key = a.assessment.subject || "General";
+    if (!subjectMap[key]) {
+      subjectMap[key] = { 
+        subject: key, 
+        topic: a.assessment.topic || key, 
+        scores: [],
+        lastAttemptAt: a.createdAt
+      };
+    }
+    subjectMap[key].scores.push(a.score);
+  }
+
+  const allPracticedTopics = Object.values(subjectMap).map(s => ({
+    topic: s.topic,
+    subject: s.subject,
+    avgScore: Math.round(s.scores.reduce((a, b) => a + b, 0) / s.scores.length),
+    lastAttemptAt: s.lastAttemptAt
+  }));
+
+  // Sort: Weakest first, then most recent
+  const sortedTopics = allPracticedTopics.sort((a, b) => {
+    if (a.avgScore < 60 && b.avgScore >= 60) return -1;
+    if (a.avgScore >= 60 && b.avgScore < 60) return 1;
+    return new Date(b.lastAttemptAt) - new Date(a.lastAttemptAt);
+  });
+
+  let finalTopics = sortedTopics.slice(0, 5);
+
+  // If we have fewer than 5 practiced topics, fill with default ones
+  if (finalTopics.length < 5) {
+    const availableSubjects = await prisma.question.findMany({
       where: { isVisible: true },
       select: { subject: true },
       distinct: ["subject"]
     });
-    const allSubjects = subjects.map(s => ({ topic: s.subject || "General", subject: s.subject || "General", avgScore: 100 }));
-    return buildModules(allSubjects.slice(0, 5), userId);
+    
+    for (const sub of availableSubjects) {
+      if (finalTopics.length >= 5) break;
+      if (!subjectMap[sub.subject]) {
+        finalTopics.push({ topic: sub.subject, subject: sub.subject, avgScore: 100 });
+      }
+    }
   }
 
-  return buildModules(weakTopics, userId);
+  return buildModules(finalTopics, userId);
 }
 
 async function buildModules(topics, userId) {
@@ -97,6 +137,9 @@ async function buildModules(topics, userId) {
       const readCount = prog?.questionsRead || 0;
       const totalQs = questions.length;
       const progressPct = totalQs > 0 ? Math.round((readCount / totalQs) * 100) : 0;
+      
+      // Use the most recent activity date
+      const lastActivity = [prog?.updatedAt, t.lastAttemptAt].filter(Boolean).sort((a, b) => new Date(b) - new Date(a))[0];
 
       return {
         id: moduleKey,
@@ -108,7 +151,7 @@ async function buildModules(topics, userId) {
         questionsRead: readCount,
         progress: progressPct,
         completed: prog?.completed || false,
-        lastReadAt: prog?.updatedAt || null,
+        lastReadAt: lastActivity || null,
         questions: questions.map(q => ({
           id: q.id,
           text: q.text,

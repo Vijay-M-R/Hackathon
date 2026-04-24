@@ -65,3 +65,31 @@ export const extractFromAI = async (filePath) => {
     throw new Error(`AI extraction failed: ${error.message}`);
   }
 };
+export const generateAITest = async (subject, topic, count = 10) => {
+  const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
+  
+  try {
+    const response = await axios.post(`${AI_SERVICE_URL}/generate-test`, {
+      subject,
+      topic,
+      count
+    }, { timeout: 300000 });
+
+    const { questions } = response.data;
+
+    return (questions || []).map(q => ({
+      text: q.question_text || q.text,
+      answer: q.answer,
+      explanation: q.explanation || q.reasoning,
+      options: q.options,
+      tags: q.tags || [],
+      difficulty: q.difficulty?.toUpperCase() || "MEDIUM",
+      type: q.type || (q.options?.length > 0 ? "MCQ" : "SUBJECTIVE"),
+      subject: subject,
+      topic: topic
+    }));
+  } catch (error) {
+    console.error("AI Generation Error:", error.response?.data || error.message);
+    throw new Error(`AI generation failed: ${error.message}`);
+  }
+};

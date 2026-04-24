@@ -65,3 +65,11 @@ export const createAssessment = async (req, res) => {
     return error(res, "Failed to create assessment", 500, err);
   }
 };
+export const getAttemptById = async (req, res) => {
+  try {
+    const data = await AssessmentService.getAttemptById(req.params.id);
+    return success(res, data);
+  } catch (err) {
+    return error(res, "Failed to load attempt details", 500, err);
+  }
+};

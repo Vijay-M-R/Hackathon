@@ -62,6 +62,9 @@ export const StudentAPI = {
       []
     ),
 
+  getAttempt: (id: string) =>
+    apiClient.get(`/assessments/attempts/${id}`).then(res => res.data.data),
+
 
   quiz: (id?: string) =>
     withFallback<QuizQuestion[]>(
@@ -229,6 +232,40 @@ export const AssessmentAPI = {
   pendingReviews: getPendingReviews,
   assessmentAttempts: (assessmentId: string) =>
     withFallback<any[]>(() => apiClient.get(`/assessments/${assessmentId}/attempts/all`), []),
+};
+
+// ============= APTITUDE =============
+export const AptitudeAPI = {
+  generate: (topic = "General Aptitude") =>
+    apiClient.post("/questions/generate", { subject: "Aptitude", topic, count: 10 }).then(res => res.data),
+
+  extract: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiClient.post("/questions/extract", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then(res => res.data);
+  },
+
+  save: (questions: any[]) =>
+    apiClient.post("/questions/save", { questions }).then(res => res.data),
+
+  submitPractice: (payload: any) =>
+    apiClient.post("/questions/submit-practice", payload).then(res => res.data),
+
+  history: () =>
+    apiClient.get("/assessments/attempts").then(res => 
+      (res.data.data || [])
+        .filter((a: any) => (a.assessment.subject || "").toLowerCase().includes("aptitude"))
+        .map((a: any) => ({
+          id: a.id,
+          topic: a.assessment.topic || "General Aptitude",
+          score: a.score,
+          correct: a.correctCount,
+          total: a.totalCount,
+          date: new Date(a.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        }))
+    ),
 };
 
 // ============= UTIL =============

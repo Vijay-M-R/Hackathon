@@ -1,5 +1,5 @@
 import { prisma } from "../config/db.js";
-import { parseExcel, extractFromAI } from "./extraction.service.js";
+import { parseExcel, extractFromAI, generateAITest } from "./extraction.service.js";
 import fs from "fs";
 import path from "path";
 
@@ -17,6 +17,10 @@ export const QuestionService = {
     
     fs.unlink(file.path, () => {});
     return questions;
+  },
+
+  async generate(subject, topic, count) {
+    return await generateAITest(subject, topic, count);
   },
 
   async bulkSave(questions, userId) {
@@ -80,5 +84,67 @@ export const QuestionService = {
       },
       orderBy: { createdAt: "desc" }
     });
+  },
+
+  async savePracticeAttempt(userId, data) {
+    const { score, correctCount, totalCount, answers, subject = "General Aptitude", topic = "Practice" } = data;
+
+    // 1. Find or Create a Practice Assessment
+    let assessment = await prisma.assessment.findFirst({
+      where: { 
+        title: `${subject} AI Practice`,
+        type: "PRACTICE"
+      }
+    });
+
+    if (!assessment) {
+      // Find a faculty user to be the owner (or use a system ID)
+      const faculty = await prisma.user.findFirst({ where: { role: "FACULTY" } });
+      
+      assessment = await prisma.assessment.create({
+        data: {
+          title: `${subject} AI Practice`,
+          type: "PRACTICE",
+          subject,
+          topic,
+          scheduledAt: new Date(),
+          duration: 30,
+          resultsReleased: true,
+          createdById: faculty ? faculty.id : userId, // Fallback to current user if no faculty
+        }
+      });
+    }
+
+    // 2. Create the Attempt
+    const attempt = await prisma.assessmentAttempt.create({
+      data: {
+        userId,
+        assessmentId: assessment.id,
+        score,
+        correctCount,
+        totalCount,
+        timeTaken: data.timeTaken || 0,
+        answers: answers || {},
+        questionsSnapshot: data.questions || null,
+      },
+      include: { assessment: true }
+    });
+
+    // 3. Update Student Profile Aptitude Score (Weighted Average)
+    const profile = await prisma.studentProfile.findUnique({ where: { userId } });
+    if (profile) {
+      let newAptScore = score;
+      if (profile.aptitudeScore !== null) {
+        // Simple running average for now
+        newAptScore = (profile.aptitudeScore + score) / 2;
+      }
+      
+      await prisma.studentProfile.update({
+        where: { userId },
+        data: { aptitudeScore: newAptScore }
+      });
+    }
+
+    return attempt;
   }
 };

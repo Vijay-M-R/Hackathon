@@ -70,3 +70,33 @@ export const getPendingAttempts = async (req, res) => {
     return error(res, "Failed to fetch pending reviews", 500, err);
   }
 };
+export const getAttemptDetailById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const attempt = await prisma.assessmentAttempt.findUnique({
+      where: { id },
+      include: {
+        assessment: { 
+          select: { 
+            title: true, 
+            subject: true, 
+            questions: { select: { id: true, text: true, answer: true, options: true, explanation: true } } 
+          } 
+        }
+      }
+    });
+
+    if (!attempt) return error(res, "Attempt not found", 404);
+
+    // If it's a practice test, use the snapshot
+    if (attempt.questionsSnapshot) {
+      attempt.questions = attempt.questionsSnapshot;
+    } else {
+      attempt.questions = attempt.assessment.questions;
+    }
+
+    return success(res, attempt);
+  } catch (err) {
+    return error(res, "Failed to load attempt details", 500, err);
+  }
+};

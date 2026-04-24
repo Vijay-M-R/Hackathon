@@ -1,6 +1,6 @@
 import express from "express";
 import { createAssessment, getAssessments, getAssessmentById, getAssessmentQuestions, releaseResults } from "../controllers/assessment.controller.js";
-import { submitAttempt, getStudentAttempts, getAssessmentAttempts, updateAttemptMarks } from "../controllers/assessmentAttempt.controller.js";
+import { submitAttempt, getStudentAttempts, getAssessmentAttempts, updateAttemptMarks, getAttemptDetailById } from "../controllers/assessmentAttempt.controller.js";
 import { authenticate, authorize } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
@@ -13,6 +13,7 @@ router.get("/attempts/pending", authenticate, authorize("FACULTY"), (req, res, n
   import("../controllers/assessmentAttempt.controller.js").then(m => m.getPendingAttempts(req, res)).catch(next);
 });
 router.get("/attempts", authenticate, authorize("STUDENT"), getStudentAttempts);
+router.get("/attempts/:id", authenticate, authorize("STUDENT"), getAttemptDetailById);
 router.get("/:id", authenticate, getAssessmentById);
 router.get("/:id/questions", authenticate, getAssessmentQuestions);
 router.post("/:assessmentId/submit", authenticate, authorize("STUDENT"), submitAttempt);

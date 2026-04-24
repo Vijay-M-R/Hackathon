@@ -29,3 +29,21 @@ export const getQuestions = async (req, res) => {
     return error(res, "Failed to fetch questions", 500, err);
   }
 };
+export const generateQuestions = async (req, res) => {
+  try {
+    const { subject, topic, count } = req.body;
+    const questions = await QuestionService.generate(subject, topic, count);
+    return success(res, questions, "AI Questions generated successfully");
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+export const submitPracticeTest = async (req, res) => {
+  try {
+    const result = await QuestionService.savePracticeAttempt(req.user.id, req.body);
+    return success(res, result, "Practice result saved successfully");
+  } catch (err) {
+    return error(res, "Failed to save practice result", 500, err);
+  }
+};
