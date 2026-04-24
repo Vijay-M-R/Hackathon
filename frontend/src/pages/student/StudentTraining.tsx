@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import {
   Video, ExternalLink
 } from "lucide-react";
 import { getQuestions } from "@/api/question.api";
-import { StudentAPI } from "@/api";
+import { StudentAPI, TrainingAPI } from "@/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ function getNextDifficulty(history: AnswerRecord[]): Difficulty {
 const DIFF_ORDER: Difficulty[] = ["EASY", "MEDIUM", "HARD"];
 
 const StudentTraining = () => {
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -38,6 +40,8 @@ const StudentTraining = () => {
   const [weakTopics, setWeakTopics] = useState<string[]>([]);
   const [showPersonalized, setShowPersonalized] = useState(false);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
+  const [trainingModules, setTrainingModules] = useState<any[]>([]);
+  const [modulesLoading, setModulesLoading] = useState(true);
 
   // ── Adaptive State ──────────────────────────────────────
   const [adaptiveMode, setAdaptiveMode] = useState(false);
@@ -49,6 +53,11 @@ const StudentTraining = () => {
 
   useEffect(() => {
     fetchQuestions();
+    // Load AI-generated training modules from DB
+    TrainingAPI.modules().then(mods => {
+      setTrainingModules(mods || []);
+      setModulesLoading(false);
+    }).catch(() => setModulesLoading(false));
     StudentAPI.results().then((results: any[]) => {
       const lowScoreTopics = results
         .filter(r => r.score < 60)
@@ -130,7 +139,92 @@ const StudentTraining = () => {
       <div className="grid lg:grid-cols-[1fr_300px] gap-8">
         <div className="space-y-6">
 
-          {/* ── Adaptive Mode Toggle Banner ── */}
+          {/* ── AI Training Modules (DB-driven, weak-topic targeted) ── */}
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            className="glass-card rounded-2xl p-5 border border-primary/20"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display font-bold flex items-center gap-2">
+                  <BrainCircuit className="h-5 w-5 text-primary" />
+                  Personalized Training Modules
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  AI-generated modules targeting your weak subjects — reveal answers to track progress
+                </p>
+              </div>
+            </div>
+
+            {modulesLoading ? (
+              <div className="py-8 flex items-center justify-center gap-3 text-muted-foreground">
+                <BrainCircuit className="h-5 w-5 animate-pulse text-primary/40" />
+                <span className="text-sm">Loading your modules...</span>
+              </div>
+            ) : trainingModules.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-sm text-muted-foreground">Complete some tests first — modules will appear based on your weak topics.</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {trainingModules.map((mod: any, idx: number) => {
+                  const progressPct = mod.progress ?? 0;
+                  const isCompleted = mod.completed;
+                  return (
+                    <motion.button
+                      key={mod.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.06 }}
+                      onClick={() => navigate(`/student/training/${mod.id}`)}
+                      className={cn(
+                        "text-left rounded-xl p-4 border transition-all duration-300 group hover:scale-[1.02] active:scale-[0.99]",
+                        isCompleted
+                          ? "bg-emerald-400/5 border-emerald-400/20 hover:border-emerald-400/40"
+                          : mod.avgScore < 100
+                          ? "bg-warning/5 border-warning/20 hover:border-warning/40"
+                          : "bg-secondary/20 border-border/40 hover:border-primary/30"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div>
+                          <p className={cn(
+                            "text-[10px] font-bold uppercase tracking-widest",
+                            isCompleted ? "text-emerald-400" : mod.avgScore < 100 ? "text-warning" : "text-primary/70"
+                          )}>
+                            {mod.subject}
+                          </p>
+                          <p className="font-semibold text-sm mt-0.5 leading-tight">{mod.topic}</p>
+                        </div>
+                        {isCompleted ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                        ) : mod.avgScore < 100 ? (
+                          <Trophy className="h-4 w-4 text-warning shrink-0" />
+                        ) : (
+                          <BookOpen className="h-4 w-4 text-primary/60 shrink-0" />
+                        )}
+                      </div>
+
+                      <Progress value={progressPct} className="h-1.5 mb-2" />
+
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span>{mod.questionsRead ?? 0}/{mod.questionsTotal ?? 0} read</span>
+                        {mod.avgScore < 100 && (
+                          <span className="text-warning font-semibold">Avg: {mod.avgScore}%</span>
+                        )}
+                        <span className={cn(
+                          "font-semibold flex items-center gap-1",
+                          isCompleted ? "text-emerald-400" : "text-primary group-hover:underline"
+                        )}>
+                          {isCompleted ? "Completed" : "Open"}
+                          <ChevronRight className="h-3 w-3" />
+                        </span>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
             className={cn(
               "glass-card rounded-xl p-4 border flex items-start justify-between gap-4 transition-all",

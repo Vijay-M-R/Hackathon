@@ -3,9 +3,21 @@ import { AIService } from "./ai.service.js";
 
 export const StudentService = {
   async getDashboardStats(userId) {
-    const profile = await prisma.studentProfile.findUnique({
+    let profile = await prisma.studentProfile.findUnique({
       where: { userId }
     });
+
+    if (!profile) {
+      profile = await prisma.studentProfile.create({
+        data: {
+          id: userId,
+          userId: userId,
+          cgpa: 7.0,
+          readinessScore: 50.0,
+          placementStatus: "UNPLACED"
+        }
+      });
+    }
 
     const attempts = await prisma.assessmentAttempt.findMany({
       where: { userId },
@@ -96,8 +108,20 @@ export const StudentService = {
   },
 
   async recalculateReadiness(userId) {
-    const profile = await prisma.studentProfile.findUnique({ where: { userId } });
-    if (!profile) throw new Error("Profile not found");
+    let profile = await prisma.studentProfile.findUnique({ where: { userId } });
+    
+    if (!profile) {
+      // Create a default profile if missing
+      profile = await prisma.studentProfile.create({
+        data: {
+          id: userId, // Use userId as the ID since it's a 1:1 relation and no default is set in schema
+          userId: userId,
+          cgpa: 7.0,
+          readinessScore: 50.0,
+          placementStatus: "UNPLACED"
+        }
+      });
+    }
 
     const attempts = await prisma.assessmentAttempt.findMany({
       where: { userId },

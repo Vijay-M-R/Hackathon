@@ -89,6 +89,37 @@ export const StudentAPI = {
     apiClient.patch(`/student/training/${moduleId}`, { progress }).then(res => res.data),
 };
 
+// ============= TRAINING (NEW) =============
+export const TrainingAPI = {
+  /** Get all training modules generated from student's weak topics */
+  modules: () =>
+    withFallback<any[]>(() => apiClient.get("/training/modules"), []),
+
+  /** Get a single module with all Q&A */
+  module: (moduleKey: string) =>
+    withFallback<any>(() => apiClient.get(`/training/modules/${moduleKey}`), null),
+
+  /** Mark a question as read — updates DB progress */
+  markRead: (moduleKey: string, questionId: string, totalQuestions: number) =>
+    apiClient.post(`/training/modules/${moduleKey}/read`, { questionId, totalQuestions }).then(res => res.data),
+
+  /** Generate a 10-question test for a module */
+  generateTest: (moduleKey: string) =>
+    withFallback<any>(() => apiClient.get(`/training/modules/${moduleKey}/test`), null),
+
+  /** Submit answers to a module test */
+  submitTest: (moduleKey: string, answers: Record<string, any>) =>
+    apiClient.post(`/training/modules/${moduleKey}/test/submit`, { answers }).then(res => res.data),
+
+  /** Get past test results for a module */
+  testHistory: (moduleKey: string) =>
+    withFallback<any[]>(() => apiClient.get(`/training/modules/${moduleKey}/test/history`), []),
+
+  /** Get weak topics for the student */
+  weakTopics: () =>
+    withFallback<any[]>(() => apiClient.get("/training/weak-topics"), []),
+};
+
 // ============= FACULTY =============
 export const FacultyAPI = {
   me: () =>

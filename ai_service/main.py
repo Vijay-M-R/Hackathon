@@ -76,5 +76,16 @@ async def analyze_interview(data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/generate-test")
+async def generate_test(data: dict):
+    try:
+        subject = data.get("subject", "General")
+        topic = data.get("topic", "General")
+        count = data.get("count", 10)
+        test_data = await extractor_service.generate_test_questions(subject, topic, count)
+        return test_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

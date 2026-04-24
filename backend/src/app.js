@@ -11,6 +11,7 @@ import studentRoutes from "./routes/student.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import reportsRoutes from "./routes/reports.routes.js";
 import interviewRoutes from "./routes/interview.routes.js";
+import trainingRoutes from "./routes/training.routes.js";
 
 
 const app = express();
@@ -34,6 +35,7 @@ app.use("/api/student", studentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/interviews", interviewRoutes);
+app.use("/api/training", trainingRoutes);
 
 
 export default app;

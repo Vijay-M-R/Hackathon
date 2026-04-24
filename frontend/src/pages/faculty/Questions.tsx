@@ -112,6 +112,8 @@ const Questions = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [issues, setIssues] = useState<ValidationIssue[]>([]);
   const [dismissedIssues, setDismissedIssues] = useState<Set<string>>(new Set());
+  const [globalSubject, setGlobalSubject] = useState("");
+  const [globalTopic, setGlobalTopic] = useState("");
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
     let selectedFile: File | null = null;
@@ -304,6 +306,39 @@ const Questions = () => {
                 )}
               </div>
               <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-2 mr-4 border-r border-border/50 pr-4 hidden md:flex">
+                  <Input 
+                    placeholder="Global Subject..." 
+                    className="h-8 w-36 text-xs bg-secondary/30" 
+                    value={globalSubject} 
+                    onChange={e => setGlobalSubject(e.target.value)} 
+                  />
+                  <Input 
+                    placeholder="Global Topic..." 
+                    className="h-8 w-36 text-xs bg-secondary/30" 
+                    value={globalTopic} 
+                    onChange={e => setGlobalTopic(e.target.value)} 
+                  />
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    className="h-8 text-xs font-semibold"
+                    onClick={() => {
+                      if (!globalSubject && !globalTopic) return;
+                      const updated = questions.map(q => ({
+                        ...q,
+                        subject: globalSubject || q.subject,
+                        topic: globalTopic || q.topic
+                      }));
+                      setQuestions(updated);
+                      setIssues(validateQuestions(updated));
+                      toast.success("Applied to all questions");
+                    }}
+                  >
+                    Apply All
+                  </Button>
+                </div>
+
                 <Button variant="outline" onClick={() => setStep("upload")}>Discard</Button>
                 <Button
                   onClick={handleSaveAll}

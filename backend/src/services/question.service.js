@@ -46,6 +46,7 @@ export const QuestionService = {
             subject: q.subject,
             topic: q.topic,
             difficulty: q.difficulty,
+            isVisible: true,
             uploadedBy: { connect: { id: userId } },
             tags: { connect: tagConnect }
           }
@@ -65,7 +66,10 @@ export const QuestionService = {
     if (tag) where.tags = { some: { name: tag } };
 
     if (user.role !== "FACULTY" && user.role !== "PLACEMENT") {
-      where.isVisible = true;
+      where.OR = [
+        { isVisible: true },
+        { uploadedById: user.id }
+      ];
     }
 
     return await prisma.question.findMany({
