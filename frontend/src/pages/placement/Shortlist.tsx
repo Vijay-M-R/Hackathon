@@ -11,11 +11,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { 
-  Download, SlidersHorizontal, Trophy, Users, ListChecks, 
+  SlidersHorizontal, Trophy, Users, ListChecks, 
   ChevronDown, ChevronUp, ShieldCheck, Zap, User, ExternalLink 
 } from "lucide-react";
 import { PlacementAPI } from "@/api";
-import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -57,19 +56,6 @@ const Shortlist = () => {
       });
   }, [students, search, sortBy, minDiscipline]);
 
-  const exportXls = () => {
-    const rows = filtered.map((s, i) => ({
-      Rank: i + 1, Name: s.name, Roll: s.roll, Email: s.email,
-      Branch: s.branch, CGPA: s.cgpa, Readiness: s.readiness,
-      DisciplineScore: s.disciplineScore || 100,
-    }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Shortlist");
-    XLSX.writeFile(wb, `shortlist-export-${Date.now()}.xlsx`);
-    toast.success(`Exported ${rows.length} students`);
-  };
-
   const statusColor = (status: string) => {
     const m: Record<string, string> = {
       PLACED: "bg-success/15 text-success border-success/30",
@@ -86,11 +72,6 @@ const Shortlist = () => {
       role="placement"
       title="Smart Shortlisting"
       subtitle="Filter, benchmark, and rank students using combined technical and behavioral data."
-      actions={
-        <Button onClick={exportXls} disabled={!filtered.length} className="bg-gradient-primary text-primary-foreground hover:opacity-90 shadow-glow">
-          <Download className="h-4 w-4 mr-2" /> Export Excel
-        </Button>
-      }
     >
       {/* Filters Panel */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl mb-5 overflow-hidden">
@@ -276,11 +257,8 @@ const Shortlist = () => {
                         {filtered.length ? Math.round(filtered.reduce((a, s) => a + (s.disciplineScore || 100), 0) / filtered.length) : 100}%
                     </p>
                  </div>
-                 <Button className="w-full bg-primary text-primary-foreground font-bold h-11 shadow-glow" onClick={exportXls}>
-                    Generate Detailed Report
-                 </Button>
               </div>
-           </div>
+            </div>
 
            <div className="glass-card p-6 rounded-2xl border border-border/50">
               <h4 className="font-display font-bold mb-4 uppercase tracking-widest text-[11px]">Recent Status</h4>

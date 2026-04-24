@@ -196,6 +196,12 @@ export const ReportsAPI = {
 
   companyTiers: () =>
     withFallback(() => apiClient.get("/reports/company-tiers"), []),
+
+  menteePerformance: () =>
+    withFallback(() => apiClient.get("/reports/mentees"), []),
+
+  subjectAnalysis: () =>
+    withFallback(() => apiClient.get("/reports/subjects"), []),
 };
 
 // ============= NOTIFICATIONS =============

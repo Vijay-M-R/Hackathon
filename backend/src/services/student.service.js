@@ -25,6 +25,11 @@ export const StudentService = {
       orderBy: { createdAt: "asc" }
     });
 
+    const interviews = await prisma.mockInterview.findMany({
+      where: { studentId: userId, status: "COMPLETED" },
+      orderBy: { createdAt: "asc" }
+    });
+
     const totalTests = attempts.length;
     const avgScore = totalTests > 0 
       ? attempts.reduce((a, b) => a + b.score, 0) / totalTests 
@@ -76,10 +81,26 @@ export const StudentService = {
 
     // 1. Calculate Skills Progression (Over Time)
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const skillsOverTime = attempts.reduce((acc, a) => {
-      const date = new Date(a.createdAt);
+    
+    // Merge attempts and interviews into a unified data stream
+    const mergedData = [
+      ...attempts.map(a => ({ 
+        date: a.createdAt, 
+        score: a.score, 
+        cat: getCategory(a.assessment) 
+      })),
+      ...interviews.map(i => ({ 
+        date: i.createdAt, 
+        score: i.overallScore, 
+        cat: (i.mode === "TECHNICAL") ? "coding" : "soft",
+        analysis: i.analysis || {}
+      }))
+    ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const skillsOverTime = mergedData.reduce((acc, a) => {
+      const date = new Date(a.date);
       const m = months[date.getMonth()];
-      const cat = getCategory(a.assessment);
+      const cat = a.cat;
       
       let entry = acc.find(e => e.month === m);
       if (!entry) {
@@ -87,9 +108,22 @@ export const StudentService = {
         acc.push(entry);
       }
       
-      // Update running average for that month and category
+      // Update running average for that month and primary category
       entry._counts[cat] = (entry._counts[cat] || 0) + 1;
       entry[cat] = Math.round(((entry[cat] * (entry._counts[cat] - 1)) + a.score) / entry._counts[cat]);
+      
+      // If interview has sub-scores for Aptitude/Soft Skills, incorporate them
+      if (a.analysis) {
+        if (typeof a.analysis.aptitude === 'number') {
+          entry._counts["aptitude"] = (entry._counts["aptitude"] || 0) + 1;
+          entry["aptitude"] = Math.round(((entry["aptitude"] * (entry._counts["aptitude"] - 1)) + a.analysis.aptitude) / entry._counts["aptitude"]);
+        }
+        if (typeof (a.analysis.communication || a.analysis.softSkills) === 'number') {
+          const sScore = a.analysis.communication || a.analysis.softSkills;
+          entry._counts["soft"] = (entry._counts["soft"] || 0) + 1;
+          entry["soft"] = Math.round(((entry["soft"] * (entry._counts["soft"] - 1)) + sScore) / entry._counts["soft"]);
+        }
+      }
       
       return acc;
     }, []).slice(-6); // Last 6 months
@@ -97,10 +131,24 @@ export const StudentService = {
     // 2. Calculate Skill Radar (Current proficiency per category)
     const categories = ["aptitude", "coding", "core", "soft"];
     const skillRadar = categories.map(cat => {
-      const catAttempts = attempts.filter(a => getCategory(a.assessment) === cat);
-      const value = catAttempts.length > 0 
-        ? catAttempts.reduce((s, a) => s + a.score, 0) / catAttempts.length 
+      const catData = mergedData.filter(d => d.cat === cat);
+      
+      // Also include sub-scores from interviews that might not be the primary category
+      const subScoreData = mergedData
+        .filter(d => d.analysis)
+        .map(d => {
+          if (cat === "aptitude" && typeof d.analysis.aptitude === 'number') return d.analysis.aptitude;
+          if (cat === "soft" && typeof (d.analysis.communication || d.analysis.softSkills) === 'number') return d.analysis.communication || d.analysis.softSkills;
+          return null;
+        })
+        .filter(v => v !== null);
+
+      const allScores = [...catData.map(d => d.score), ...subScoreData];
+      
+      const value = allScores.length > 0 
+        ? allScores.reduce((s, v) => s + v, 0) / allScores.length 
         : 0;
+
       return { 
         skill: labels[cat], 
         value: Math.round(value),

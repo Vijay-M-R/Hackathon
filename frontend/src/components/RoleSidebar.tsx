@@ -56,7 +56,6 @@ const MENUS: Record<Role, MenuGroup[]> = {
       label: "Manage",
       items: [
         { title: "Overview", url: "/faculty", icon: LayoutDashboard },
-        { title: "Question Bank", url: "/faculty/questions", icon: FileText },
         { title: "Schedule Tests", url: "/faculty/schedule", icon: CalendarDays },
         { title: "Manual Review", url: "/faculty/review", icon: ClipboardList },
         { title: "Mock Interviews", url: "/faculty/interview", icon: MessageSquare },

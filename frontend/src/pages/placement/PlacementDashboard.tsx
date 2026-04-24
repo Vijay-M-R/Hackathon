@@ -6,11 +6,10 @@ import { Button } from "@/components/ui/button";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { Building2, Users, TrendingUp, Trophy, Download, ArrowUpRight, CalendarDays } from "lucide-react";
+import { Building2, Users, TrendingUp, Trophy, ArrowUpRight, CalendarDays } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PlacementAPI } from "@/api";
 import type { Company, PlacementDrive } from "@/data/mock";
-import * as XLSX from "xlsx";
 import { toast } from "sonner";
 
 const tooltipStyle = {
@@ -36,38 +35,17 @@ const PlacementDashboard = () => {
   const offers = drives.reduce((s, d: any) => s + (d.offersCount ?? 0), 0);
   const upcomingDrives = drives.filter((d) => d.status !== "COMPLETED").length;
 
-  const exportSummary = () => {
-    const rows = drives.map((d: any) => {
-      const co = companies.find((c) => c.id === d.companyId);
-      return {
-        Drive: d.title || co?.name || "Drive",
-        Date: new Date(d.date).toLocaleDateString(),
-        Status: d.status,
-        Applicants: d.applicantCount ?? 0,
-        Offers: d.offersCount ?? 0,
-      };
-    });
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Drives");
-    XLSX.writeFile(wb, "placement-summary.xlsx");
-    toast.success("Exported placement summary");
-  };
-
   return (
     <DashboardLayout
       role="placement"
       title="Placement Cell"
       subtitle="Pipeline, drives, shortlists — at a glance."
       actions={
-        <>
-          <Button variant="outline" size="sm" onClick={exportSummary}><Download className="h-4 w-4 mr-2" />Export</Button>
-          <Link to="/placement/companies">
-            <Button size="sm" className="bg-gradient-primary text-primary-foreground hover:opacity-90 shadow-glow">
-              <Building2 className="h-4 w-4 mr-2" /> Add company
-            </Button>
-          </Link>
-        </>
+        <Link to="/placement/companies">
+          <Button size="sm" className="bg-gradient-primary text-primary-foreground hover:opacity-90 shadow-glow">
+            <Building2 className="h-4 w-4 mr-2" /> Add company
+          </Button>
+        </Link>
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

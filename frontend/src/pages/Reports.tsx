@@ -7,13 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+  BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Cell,
 } from "recharts";
-import { Download, FileText, GitBranch, Building2, TrendingUp, Users } from "lucide-react";
+import { FileText, GitBranch, Building2, TrendingUp, Users } from "lucide-react";
 import { ReportsAPI } from "@/api";
-import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +32,8 @@ const Reports = ({ role }: Props) => {
   const [heatmap, setHeatmap] = useState<any[]>([]);
   const [branchData, setBranchData] = useState<any[]>([]);
   const [tierData, setTierData] = useState<any[]>([]);
+  const [mentees, setMentees] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
   const [selectedBranches, setSelectedBranches] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -46,10 +45,15 @@ const Reports = ({ role }: Props) => {
       setSelectedBranches(new Set(d.map((b: any) => b.branch)));
     });
     ReportsAPI.companyTiers().then(setTierData);
-  }, []);
+    
+    if (role === "faculty") {
+      ReportsAPI.menteePerformance().then(setMentees);
+      ReportsAPI.subjectAnalysis().then(setSubjects);
+    }
+  }, [role]);
 
   const heatCells = useMemo(() => {
-    const skills = ["DSA", "OS", "DBMS", "Aptitude", "Soft"] as const;
+    const skills = ["DSA", "DBMS", "OS", "Aptitude", "Soft Skills"] as const;
     return heatmap.map((row) => ({
       batch: row.batch,
       cells: skills.map((sk) => ({ skill: sk, value: (row as any)[sk] as number })),
@@ -83,64 +87,38 @@ const Reports = ({ role }: Props) => {
     return entry;
   });
 
-  const exportExcel = () => {
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthly), "MonthlyReadiness");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(yoy), "YearOverYear");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(heatmap), "SkillHeatmap");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(branchData), "BranchAnalytics");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tierData), "CompanyTiers");
-    XLSX.writeFile(wb, "placement-reports.xlsx");
-    toast.success("Excel exported");
-  };
-
-  const exportPdf = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("PlaceReady — Reports", 14, 16);
-    doc.setFontSize(10);
-    doc.text(`Generated ${new Date().toLocaleString()}`, 14, 22);
-    autoTable(doc, { startY: 28, head: [["Month", "CSE-A", "CSE-B", "ECE"]], body: monthly.map((m) => [m.month, m.batchA, m.batchB, m.ece]), headStyles: { fillColor: [38, 175, 230] } });
-    autoTable(doc, { startY: (doc as any).lastAutoTable.finalY + 10, head: [["Year", "Placement %", "Avg CTC (LPA)"]], body: yoy.map((y) => [y.year, y.placementRate, y.avgCtc]), headStyles: { fillColor: [38, 175, 230] } });
-    autoTable(doc, { startY: (doc as any).lastAutoTable.finalY + 10, head: [["Branch", "Avg Readiness", "Avg CGPA", "Avg Score", "Students"]], body: branchData.map(b => [b.branch, b.avgReadiness, b.avgCgpa, b.avgScore, b.studentCount]), headStyles: { fillColor: [38, 175, 230] } });
-    doc.save("placement-reports.pdf");
-    toast.success("PDF exported");
-  };
-
   return (
     <DashboardLayout
       role={role}
       title={role === "placement" ? "Analytics Reports" : "Reports & Trends"}
       subtitle={role === "placement" ? "Branch-wise analysis, company tiers, and detailed skill heatmaps." : "Trends, branch comparisons, company tier breakdowns, and exportable summaries."}
-      actions={
-        <>
-          <Button variant="outline" size="sm" onClick={exportPdf}><FileText className="h-4 w-4 mr-2" />PDF</Button>
-          <Button size="sm" onClick={exportExcel} className="bg-gradient-primary text-primary-foreground hover:opacity-90 shadow-glow">
-            <Download className="h-4 w-4 mr-2" />Excel
-          </Button>
-        </>
-      }
     >
       <Tabs defaultValue={role === "placement" ? "branch" : "overview"} className="w-full">
-        <TabsList className="mb-6 bg-secondary/30 rounded-xl p-1 h-12 gap-1">
+        <TabsList className="mb-6 bg-secondary/30 rounded-xl p-1 h-12 gap-1 overflow-x-auto justify-start">
           {role !== "placement" && (
             <TabsTrigger value="overview" className="rounded-lg px-5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <TrendingUp className="h-4 w-4 mr-2" /> Overview
             </TabsTrigger>
           )}
-          <TabsTrigger value="branch" className="rounded-lg px-5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <GitBranch className="h-4 w-4 mr-2" /> Branch Comparison
-          </TabsTrigger>
-          <TabsTrigger value="tiers" className="rounded-lg px-5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <Building2 className="h-4 w-4 mr-2" /> Company Tiers
-          </TabsTrigger>
+          {role !== "faculty" && (
+            <>
+              <TabsTrigger value="branch" className="rounded-lg px-5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <GitBranch className="h-4 w-4 mr-2" /> Branch Comparison
+              </TabsTrigger>
+              <TabsTrigger value="tiers" className="rounded-lg px-5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Building2 className="h-4 w-4 mr-2" /> Company Tiers
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
+
+
 
         {/* ── TAB 1: Overview ── */}
         <TabsContent value="overview" className="mt-0 space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl p-6">
-              <h3 className="font-display font-semibold mb-1">Readiness — month over month</h3>
+              <h3 className="font-display font-semibold mb-1 text-foreground">Readiness — month over month</h3>
               <p className="text-xs text-muted-foreground mb-4">By batch</p>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -159,7 +137,7 @@ const Reports = ({ role }: Props) => {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card rounded-xl p-6">
-              <h3 className="font-display font-semibold mb-1">Year-over-year placements</h3>
+              <h3 className="font-display font-semibold mb-1 text-foreground">Year-over-year placements</h3>
               <p className="text-xs text-muted-foreground mb-4">Placement rate (%) and avg CTC (LPA)</p>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -178,7 +156,7 @@ const Reports = ({ role }: Props) => {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass-card rounded-xl p-6">
-            <h3 className="font-display font-semibold mb-1">Batch × skill heatmap</h3>
+            <h3 className="font-display font-semibold mb-1 text-foreground">Batch × skill heatmap</h3>
             <p className="text-xs text-muted-foreground mb-4">Average score by batch and skill</p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-separate border-spacing-1">
@@ -204,10 +182,7 @@ const Reports = ({ role }: Props) => {
             </div>
           </motion.div>
         </TabsContent>
-
-        {/* ── TAB 2: Branch Comparison ── */}
         <TabsContent value="branch" className="mt-0 space-y-6">
-          {/* Branch filter chips */}
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mr-2 flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Filter:</span>
             {branchData.map((b, i) => (
@@ -228,9 +203,8 @@ const Reports = ({ role }: Props) => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Bar: multi-metric comparison */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl p-6">
-              <h3 className="font-display font-semibold mb-1">Metric Comparison by Branch</h3>
+              <h3 className="font-display font-semibold mb-1 text-foreground">Metric Comparison by Branch</h3>
               <p className="text-xs text-muted-foreground mb-4">Readiness, CGPA×10, and Avg Score side-by-side</p>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -247,9 +221,8 @@ const Reports = ({ role }: Props) => {
               </div>
             </motion.div>
 
-            {/* Radar: shape comparison */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card rounded-xl p-6">
-              <h3 className="font-display font-semibold mb-1">Radar Profile</h3>
+              <h3 className="font-display font-semibold mb-1 text-foreground">Radar Profile</h3>
               <p className="text-xs text-muted-foreground mb-4">Multi-dimensional branch comparison</p>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -276,10 +249,9 @@ const Reports = ({ role }: Props) => {
             </motion.div>
           </div>
 
-          {/* Branch stats table */}
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass-card rounded-xl overflow-hidden">
             <div className="p-5 border-b border-border/40">
-              <h3 className="font-display font-semibold">Branch Statistics</h3>
+              <h3 className="font-display font-semibold text-foreground">Branch Statistics</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -299,7 +271,7 @@ const Reports = ({ role }: Props) => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: BRANCH_COLORS[i % BRANCH_COLORS.length] }} />
-                          <span className="font-bold">{b.branch}</span>
+                          <span className="font-bold text-foreground">{b.branch}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-muted-foreground font-medium">{b.studentCount}</td>
@@ -311,8 +283,8 @@ const Reports = ({ role }: Props) => {
                           <span className="font-display font-bold text-primary">{b.avgReadiness}%</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-semibold">{b.avgCgpa}</td>
-                      <td className="px-6 py-4 font-semibold">{b.avgScore}%</td>
+                      <td className="px-6 py-4 font-semibold text-foreground">{b.avgCgpa}</td>
+                      <td className="px-6 py-4 font-semibold text-foreground">{b.avgScore}%</td>
                       <td className="px-6 py-4">
                         <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full",
                           b.avgFocusLoss <= 1 ? "bg-success/10 text-success" :
@@ -343,10 +315,10 @@ const Reports = ({ role }: Props) => {
                   <div className="text-3xl font-display font-bold mb-1" style={{ color }}>{t.conversionRate}%</div>
                   <div className="text-xs text-muted-foreground mb-4">Offer conversion rate</div>
                   <div className="space-y-2 text-xs">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Drives</span><span className="font-semibold">{t.drives}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Applicants</span><span className="font-semibold">{t.applicants}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Drives</span><span className="font-semibold text-foreground">{t.drives}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Applicants</span><span className="font-semibold text-foreground">{t.applicants}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Offers</span><span className="font-semibold text-success">{t.offers}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Avg CGPA req.</span><span className="font-semibold">{t.avgCgpa}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Avg CGPA req.</span><span className="font-semibold text-foreground">{t.avgCgpa}</span></div>
                   </div>
                 </motion.div>
               );
@@ -355,7 +327,7 @@ const Reports = ({ role }: Props) => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl p-6">
-              <h3 className="font-display font-semibold mb-1">Conversion Rate by Tier</h3>
+              <h3 className="font-display font-semibold mb-1 text-foreground">Conversion Rate by Tier</h3>
               <p className="text-xs text-muted-foreground mb-4">Offers given as % of applicants</p>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -366,7 +338,7 @@ const Reports = ({ role }: Props) => {
                     <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--primary) / 0.05)" }} />
                     <Bar dataKey="conversionRate" name="Conversion %" radius={[6, 6, 0, 0]}>
                       {tierData.map((t, i) => (
-                        <rect key={i} fill={(TIER_COLORS as any)[t.tier] || BRANCH_COLORS[i]} />
+                        <Cell key={i} fill={(TIER_COLORS as any)[t.tier] || BRANCH_COLORS[i % BRANCH_COLORS.length]} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -375,7 +347,7 @@ const Reports = ({ role }: Props) => {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card rounded-xl p-6">
-              <h3 className="font-display font-semibold mb-1">Applicant vs Offer Volume</h3>
+              <h3 className="font-display font-semibold mb-1 text-foreground">Applicant vs Offer Volume</h3>
               <p className="text-xs text-muted-foreground mb-4">Pipeline depth by company tier</p>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">

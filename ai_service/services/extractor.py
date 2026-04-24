@@ -244,8 +244,48 @@ class GapsExtractor:
                 "analysis": breakdown,
                 "feedback": data.get("feedback") or "Brutal analysis complete."
             }
+
+    async def analyze_report(self, data: dict) -> dict:
+        prompt = f"""
+        Analyze this institutional placement report data and provide high-level insights:
+        - Monthly Readiness: {json.dumps(data.get('monthly', []))}
+        - Branch Comparison: {json.dumps(data.get('branchData', []))}
+        - Company Tiers: {json.dumps(data.get('tierData', []))}
+        
+        Provide:
+        1. A brief overall executive summary (2-3 sentences).
+        2. Top 3 strengths identified across the institution.
+        3. Top 3 areas requiring immediate attention.
+        4. A prediction for the next placement season based on the data.
+        
+        Return JSON with:
+        {{
+            "summary": "...",
+            "strengths": ["...", "...", "..."],
+            "weaknesses": ["...", "...", "..."],
+            "prediction": "..."
+        }}
+        """
+        try:
+            if self.groq_client:
+                completion = self.groq_client.chat.completions.create(
+                    model=self.groq_model,
+                    messages=[
+                        {"role": "system", "content": "You are a senior institutional analyst. Provide critical, data-driven insights in JSON."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    response_format={"type": "json_object"}
+                )
+                return json.loads(completion.choices[0].message.content)
+            else:
+                response = self.gemini_client.models.generate_content(
+                    model=self.gemini_model,
+                    contents=prompt,
+                    config={'response_mime_type': 'application/json'}
+                )
+                return json.loads(response.text)
         except Exception as e:
-            print(f"Groq Interview Analysis Error: {e}")
+            print(f"AI Report Analysis Error: {e}")
             raise e
 
     async def generate_test_questions(self, subject: str, topic: str, count: int = 10) -> dict:
