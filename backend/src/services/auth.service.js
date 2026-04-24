@@ -25,7 +25,18 @@ export async function loginUser({ email, password, requiredRole }) {
     data: { refreshToken },
   });
 
-  return { accessToken, refreshToken, user: { id: user.id, email: user.email, role: user.role } };
+  return { 
+    accessToken, 
+    refreshToken, 
+    user: { 
+      id: user.id, 
+      email: user.email, 
+      role: user.role, 
+      fullName: user.fullName, 
+      name: user.name,
+      mentorId: user.mentorId 
+    } 
+  };
 }
 
 export async function logoutUser(token) {
@@ -80,6 +91,10 @@ export async function getUserProfile(userId) {
     where: { id: userId },
     select: { 
       id: true, email: true, role: true, fullName: true, department: true, usn: true,
+      mentorId: true,
+      mentor: {
+        select: { id: true, fullName: true, name: true, department: true }
+      },
       StudentProfile: {
         select: { cgpa: true, readinessScore: true, branch: true, placementStatus: true }
       }

@@ -9,5 +9,6 @@ router.get("/user", authenticate, InterviewController.getUserInterviews);
 router.get("/:id", authenticate, InterviewController.getInterview);
 router.post("/ai-respond", authenticate, InterviewController.handleAIResponse);
 router.post("/:id/finish", authenticate, InterviewController.finishInterview);
+router.get("/faculties", authenticate, InterviewController.getFaculties);
 
 export default router;

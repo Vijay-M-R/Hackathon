@@ -115,5 +115,23 @@ export const InterviewController = {
     } catch (err) {
       return error(res, "Failed to analyze interview", 500, err);
     }
+  },
+  
+  async getFaculties(req, res) {
+    try {
+      const faculties = await prisma.user.findMany({
+        where: { role: "FACULTY" },
+        select: {
+          id: true,
+          name: true,
+          fullName: true,
+          department: true,
+          subjects: true
+        }
+      });
+      return success(res, faculties);
+    } catch (err) {
+      return error(res, "Failed to load faculties", 500, err);
+    }
   }
 };

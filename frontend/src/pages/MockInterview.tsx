@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Play, Calendar, User, MessageSquare, Bot, Briefcase, Plus, BrainCircuit } from 'lucide-react';
+import { Play, Calendar, User, MessageSquare, Bot, Briefcase, Plus, BrainCircuit, Sparkles, Trophy, ClipboardList, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ const API_BASE = "http://localhost:3000/api";
 const MockInterview = () => {
   const [interviews, setInterviews] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [faculties, setFaculties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -26,14 +27,29 @@ const MockInterview = () => {
   const userRole = (user.role || 'student').toLowerCase() as any;
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [scheduleData, setScheduleData] = useState({ date: '', time: '', mode: 'TECHNICAL' });
+  const [selectedFaculty, setSelectedFaculty] = useState<any>(null);
+  const [scheduleData, setScheduleData] = useState({ date: '', time: '', mode: 'TECHNICAL', facultyId: '' });
 
   useEffect(() => {
     fetchInterviews();
     if (userRole === 'faculty') {
       fetchStudents();
+    } else {
+      fetchFaculties();
     }
   }, [userRole]);
+
+  const fetchFaculties = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.get(`${API_BASE}/interviews/faculties`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setFaculties(response.data.data || []);
+    } catch (error) {
+      console.error("Failed to fetch faculties", error);
+    }
+  };
 
   const fetchInterviews = async () => {
     try {
@@ -67,18 +83,20 @@ const MockInterview = () => {
       const token = localStorage.getItem('accessToken');
       const scheduledAt = new Date(`${scheduleData.date}T${scheduleData.time}`);
       
-      await axios.post(`${API_BASE}/interviews/start`, 
-        { 
-          title: `Scheduled Mock Interview (${scheduleData.mode})`, 
-          type: 'FACULTY', 
-          mode: scheduleData.mode, 
-          studentId: selectedStudent.id,
-          scheduledAt
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const payload = { 
+        title: `Mock Interview (${scheduleData.mode})`, 
+        type: 'FACULTY', 
+        mode: scheduleData.mode, 
+        studentId: userRole === 'faculty' ? selectedStudent?.id : user.id,
+        facultyId: userRole === 'faculty' ? user.id : scheduleData.facultyId,
+        scheduledAt
+      };
+
+      await axios.post(`${API_BASE}/interviews/start`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       
-      toast({ title: "Success", description: "Interview scheduled and notification sent." });
+      toast({ title: "Success", description: "Interview scheduled successfully." });
       setIsScheduleOpen(false);
       fetchInterviews();
     } catch (error) {
@@ -204,8 +222,8 @@ const MockInterview = () => {
               </CardHeader>
               <CardFooter className="flex flex-col gap-3">
                 <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Dashboard Monitoring Active</p>
-                <Button variant="outline" className="w-full" disabled>
-                  Coming Soon
+                <Button variant="outline" className="w-full font-bold" onClick={() => setIsScheduleOpen(true)}>
+                  Book Session
                 </Button>
               </CardFooter>
             </Card>
@@ -348,36 +366,59 @@ const MockInterview = () => {
 
         {/* Schedule Interview Dialog */}
         <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] rounded-3xl border-2">
             <DialogHeader>
-              <DialogTitle>Schedule Interview</DialogTitle>
-              <CardDescription>Plan a session for {selectedStudent?.name}</CardDescription>
+              <DialogTitle className="text-2xl font-black">
+                {userRole === 'faculty' ? 'Schedule Interview' : 'Book Faculty Session'}
+              </DialogTitle>
+              <CardDescription className="font-medium">
+                {userRole === 'faculty' ? `Plan a session for ${selectedStudent?.name}` : 'Select a mentor and time for your mock interview'}
+              </CardDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="date" className="text-right">Date</Label>
-                <Input id="date" type="date" className="col-span-3" value={scheduleData.date} onChange={(e) => setScheduleData({...scheduleData, date: e.target.value})} />
+            <div className="grid gap-6 py-4">
+              {userRole === 'student' && (
+                <div className="grid gap-2">
+                  <Label htmlFor="faculty" className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Select Faculty</Label>
+                  <Select value={scheduleData.facultyId} onValueChange={(v) => setScheduleData({...scheduleData, facultyId: v})}>
+                    <SelectTrigger className="rounded-xl border-2 h-12">
+                      <SelectValue placeholder="Choose a mentor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {faculties.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>{f.name || f.fullName} ({f.department || 'Expert'})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="date" className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Date</Label>
+                  <Input id="date" type="date" className="rounded-xl border-2 h-12" value={scheduleData.date} onChange={(e) => setScheduleData({...scheduleData, date: e.target.value})} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="time" className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Time</Label>
+                  <Input id="time" type="time" className="rounded-xl border-2 h-12" value={scheduleData.time} onChange={(e) => setScheduleData({...scheduleData, time: e.target.value})} />
+                </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="time" className="text-right">Time</Label>
-                <Input id="time" type="time" className="col-span-3" value={scheduleData.time} onChange={(e) => setScheduleData({...scheduleData, time: e.target.value})} />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="mode" className="text-right">Mode</Label>
+
+              <div className="grid gap-2">
+                <Label htmlFor="mode" className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Interview Mode</Label>
                 <Select value={scheduleData.mode} onValueChange={(v) => setScheduleData({...scheduleData, mode: v})}>
-                  <SelectTrigger className="col-span-3">
+                  <SelectTrigger className="rounded-xl border-2 h-12">
                     <SelectValue placeholder="Select mode" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="TECHNICAL">Technical</SelectItem>
+                    <SelectItem value="TECHNICAL">Technical Round</SelectItem>
                     <SelectItem value="HR">HR / Behavioral</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleSchedule} disabled={!scheduleData.date || !scheduleData.time}>
-                Confirm Schedule
+              <Button className="w-full h-12 rounded-xl font-black text-lg shadow-xl shadow-primary/20" onClick={handleSchedule} disabled={!scheduleData.date || !scheduleData.time || (userRole === 'student' && !scheduleData.facultyId)}>
+                {userRole === 'faculty' ? 'Confirm Schedule' : 'Request Booking'}
               </Button>
             </DialogFooter>
           </DialogContent>
