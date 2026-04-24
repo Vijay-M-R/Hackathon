@@ -272,7 +272,9 @@ export const AssessmentService = {
 
     // Percentile calculations (only for released results)
     return Promise.all(attempts.map(async (a) => {
-      if (!a.assessment.resultsReleased) {
+      const isPractice = a.assessment.type === "PRACTICE";
+      
+      if (!a.assessment.resultsReleased && !isPractice) {
         return { 
           ...a, 
           score: null, 
@@ -291,5 +293,18 @@ export const AssessmentService = {
       const percentile = total > 1 ? Math.round((below / (total - 1)) * 100) : 100;
       return { ...a, percentile, isReleased: true };
     }));
+  },
+
+  async getAttemptById(id) {
+    const attempt = await prisma.assessmentAttempt.findUnique({
+      where: { id },
+      include: { 
+        assessment: { 
+          select: { title: true, subject: true, type: true, questions: true } 
+        } 
+      }
+    });
+    if (!attempt) throw new Error("Attempt not found");
+    return attempt;
   }
 };

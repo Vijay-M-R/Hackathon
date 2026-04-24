@@ -209,7 +209,12 @@ const StudentTraining = () => {
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                         <span>{mod.questionsRead ?? 0}/{mod.questionsTotal ?? 0} read</span>
                         {mod.avgScore < 100 && (
-                          <span className="text-warning font-semibold">Avg: {mod.avgScore}%</span>
+                          <div className="flex flex-col items-end">
+                            <span className="text-warning font-semibold">Avg: {mod.avgScore}%</span>
+                            {mod.lastReadAt && (
+                              <span className="opacity-70">{new Date(mod.lastReadAt).toLocaleDateString()}</span>
+                            )}
+                          </div>
                         )}
                         <span className={cn(
                           "font-semibold flex items-center gap-1",

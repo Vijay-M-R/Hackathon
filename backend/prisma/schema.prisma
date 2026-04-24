@@ -50,6 +50,7 @@ model Question {
   id           String       @id @default(uuid())
   text         String
   answer       String
+  explanation  String?      @db.Text
   options      Json?    
   type         String       @default("MCQ") 
   subject      String?
@@ -97,6 +98,7 @@ model AssessmentAttempt {
   
   assessmentId    String
   assessment      Assessment @relation(fields: [assessmentId], references: [id])
+  questionsSnapshot Json?
   
   createdAt       DateTime   @default(now())
 }

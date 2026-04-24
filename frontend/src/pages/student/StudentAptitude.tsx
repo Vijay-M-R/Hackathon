@@ -24,7 +24,7 @@ type MCQQuestion = {
 };
 
 const StudentAptitude = () => {
-  const [phase, setPhase] = useState<"idle" | "loading" | "preview" | "active" | "submitting" | "result">("idle");
+  const [phase, setPhase] = useState<"idle" | "loading" | "preview" | "active" | "submitting" | "result" | "review">("idle");
   const [questions, setQuestions] = useState<MCQQuestion[]>([]);
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -32,6 +32,39 @@ const StudentAptitude = () => {
   const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
   const [score, setScore] = useState<{ correct: number; total: number; pct: number } | null>(null);
   const [generatingMore, setGeneratingMore] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [reviewData, setReviewData] = useState<any>(null);
+
+  const fetchReview = async (id: string) => {
+    setPhase("loading");
+    try {
+      const { StudentAPI } = await import("@/api");
+      const data = await StudentAPI.getAttempt(id);
+      setReviewData(data);
+      setPhase("review");
+    } catch (err) {
+      toast.error("Failed to load review details");
+      setPhase("idle");
+    }
+  };
+
+  const fetchHistory = async () => {
+    try {
+      const res = await AptitudeAPI.history();
+      setHistory(res || []);
+    } catch (err) {
+      console.error("Failed to fetch aptitude history", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (phase === "idle") {
+      fetchHistory();
+    }
+  }, [phase]);
 
   useEffect(() => {
     return () => {
@@ -111,7 +144,8 @@ const StudentAptitude = () => {
         correctCount: correct,
         totalCount: questions.length,
         answers,
-        subject: "Aptitude",
+        questions,
+        subject: "General Aptitude",
         topic: questions[0]?.topic || "General Practice",
         timeTaken: (questions.length * 60) - timeLeft
       });
@@ -145,48 +179,106 @@ const StudentAptitude = () => {
   if (phase === "idle") {
     return (
       <DashboardLayout role="student" title="Aptitude Hub" subtitle="Master your skills with AI-generated practice sessions.">
-        <div className="max-w-2xl mx-auto mt-16 text-center space-y-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-12 rounded-3xl border border-primary/20 flex flex-col items-center space-y-8 bg-primary/5 shadow-glow"
-          >
-            <div className="h-24 w-24 rounded-3xl bg-primary/20 flex items-center justify-center">
-              <Brain className="h-12 w-12 text-primary animate-pulse" />
-            </div>
-            <div className="space-y-3">
-              <h3 className="text-3xl font-bold tracking-tight">Personalized AI Practice</h3>
-              <p className="text-muted-foreground text-lg max-w-md mx-auto">
-                Generate dynamic aptitude tests tailored to your preparation needs. 
-                All results are tracked to update your readiness graph.
+        <div className="grid lg:grid-cols-3 gap-8 mt-10">
+          {/* Main Action Card */}
+          <div className="lg:col-span-2 space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-card p-10 rounded-3xl border border-primary/20 flex flex-col items-center space-y-8 bg-primary/5 shadow-glow"
+            >
+              <div className="h-20 w-20 rounded-3xl bg-primary/20 flex items-center justify-center">
+                <Brain className="h-10 w-10 text-primary animate-pulse" />
+              </div>
+              <div className="space-y-3 text-center">
+                <h3 className="text-3xl font-bold tracking-tight">Personalized AI Practice</h3>
+                <p className="text-muted-foreground text-base max-w-md mx-auto">
+                  Generate dynamic aptitude tests tailored to your preparation needs. 
+                </p>
+              </div>
+              
+              <Button onClick={generateAIQuestions} size="lg" className="w-full max-w-xs gap-2 py-8 text-lg font-bold shadow-glow transition-all hover:scale-[1.02]">
+                <Zap className="h-6 w-6" /> Start New Test
+              </Button>
+
+              <div className="grid grid-cols-3 gap-6 w-full pt-8 border-t border-primary/10">
+                <div className="space-y-1 text-center">
+                  <p className="text-2xl font-bold text-primary">10</p>
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Questions</p>
+                </div>
+                <div className="space-y-1 text-center">
+                  <p className="text-2xl font-bold text-primary">10m</p>
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Duration</p>
+                </div>
+                <div className="space-y-1 text-center">
+                  <p className="text-2xl font-bold text-primary">AI</p>
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Adaptive</p>
+                </div>
+              </div>
+            </motion.div>
+
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground italic">
+                "Practice makes perfect. Your scores directly impact your placement readiness score."
               </p>
             </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
-              <Button onClick={generateAIQuestions} size="lg" className="flex-1 gap-2 py-8 text-lg font-bold shadow-glow transition-all hover:scale-[1.02]">
-                <Zap className="h-6 w-6" /> Generate Test
-              </Button>
+          </div>
+
+          {/* Previous Attempts Sidebar */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                <RotateCcw className="h-5 w-5 text-primary" />
+                Recent History
+              </h3>
             </div>
 
-            <div className="grid grid-cols-3 gap-6 w-full pt-8 border-t border-primary/10">
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-primary">10</p>
-                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Questions</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-primary">10m</p>
-                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Duration</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-primary">AI</p>
-                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Adaptive</p>
-              </div>
+            <div className="space-y-4">
+              {historyLoading ? (
+                Array(3).fill(0).map((_, i) => (
+                  <div key={i} className="h-24 w-full rounded-2xl bg-secondary/20 animate-pulse" />
+                ))
+              ) : history.length === 0 ? (
+                <div className="glass-card p-6 rounded-2xl border border-dashed border-border/50 text-center">
+                  <Trophy className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No attempts yet. Take your first test!</p>
+                </div>
+              ) : (
+                history.map((h, i) => (
+                  <motion.div
+                    key={h.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    onClick={() => fetchReview(h.id)}
+                    className="glass-card p-4 rounded-2xl border border-border/50 hover:border-primary/30 transition-all group cursor-pointer"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold truncate max-w-[120px]">{h.topic}</p>
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {h.date}
+                        </p>
+                      </div>
+                      <Badge className={cn(
+                        "text-[10px] font-bold px-2 py-0",
+                        h.score >= 70 ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/20" : "bg-warning/10 text-warning border-warning/20"
+                      )}>
+                        {h.score}%
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/40">
+                      <div className="flex gap-3 text-[10px] font-medium text-muted-foreground">
+                        <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-400" /> {h.correct}</span>
+                        <span className="flex items-center gap-1"><XCircle className="h-3 w-3 text-rose-400" /> {h.total - h.correct}</span>
+                      </div>
+                      <span className="text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity font-bold">Review →</span>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </div>
-          </motion.div>
-
-          <p className="text-xs text-muted-foreground italic">
-            "Practice makes perfect. Your scores directly impact your placement readiness score."
-          </p>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -398,6 +490,95 @@ const StudentAptitude = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (phase === "review" && reviewData) {
+    const qs = reviewData.questions || [];
+    const studentAns = reviewData.answers || {};
+
+    return (
+      <DashboardLayout role="student" title="Review Attempt" subtitle={reviewData.assessment?.title}>
+        <div className="max-w-3xl mx-auto space-y-8">
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" onClick={() => setPhase("idle")} className="gap-2">
+              <ArrowLeft className="h-4 w-4" /> Back to Hub
+            </Button>
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground uppercase font-bold tracking-widest">Score</p>
+              <p className="text-2xl font-bold text-primary">{Math.round(reviewData.score)}%</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {qs.map((q: any, i: number) => {
+              const isCorrect = studentAns[i] === q.answer;
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className={cn(
+                    "glass-card p-6 rounded-2xl border flex gap-4",
+                    isCorrect ? "border-emerald-500/20 bg-emerald-500/5" : "border-rose-500/20 bg-rose-500/5"
+                  )}
+                >
+                  <div className="shrink-0 mt-1">
+                    {isCorrect ? <CheckCircle2 className="h-6 w-6 text-emerald-500" /> : <XCircle className="h-6 w-6 text-rose-500" />}
+                  </div>
+                  <div className="space-y-4 flex-1">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="text-[10px] uppercase font-bold">Question {i + 1}</Badge>
+                        {q.difficulty && <Badge className="text-[10px]">{q.difficulty}</Badge>}
+                      </div>
+                      <p className="text-lg font-medium leading-relaxed">{q.text}</p>
+                    </div>
+
+                    <div className="grid gap-2">
+                      {(q.options || []).map((opt: string, oi: number) => (
+                        <div key={oi} className={cn(
+                          "text-sm p-3 rounded-xl border flex items-center gap-3",
+                          opt === q.answer ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 font-semibold shadow-sm" :
+                          opt === studentAns[i] && opt !== q.answer ? "bg-rose-500/10 border-rose-500/30 text-rose-600" :
+                          "bg-secondary/10 border-border/30 text-muted-foreground/60"
+                        )}>
+                          <span className={cn(
+                            "h-6 w-6 rounded-md border flex items-center justify-center text-[10px] font-bold",
+                            opt === q.answer ? "bg-emerald-500 text-white border-emerald-500" : 
+                            opt === studentAns[i] ? "bg-rose-500 text-white border-rose-500" : "border-border"
+                          )}>
+                            {String.fromCharCode(65 + oi)}
+                          </span>
+                          {opt}
+                        </div>
+                      ))}
+                    </div>
+
+                    {q.explanation && (
+                      <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/10">
+                        <p className="text-xs font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-2">
+                          <Brain className="h-3.5 w-3.5" /> AI Explanation
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed italic">
+                          {q.explanation}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          <div className="flex justify-center py-8">
+            <Button onClick={() => setPhase("idle")} className="gap-2">
+              <ArrowLeft className="h-4 w-4" /> Return to Hub
+            </Button>
           </div>
         </div>
       </DashboardLayout>

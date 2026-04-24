@@ -87,7 +87,7 @@ export const QuestionService = {
   },
 
   async savePracticeAttempt(userId, data) {
-    const { score, correctCount, totalCount, answers, subject = "Aptitude", topic = "Practice" } = data;
+    const { score, correctCount, totalCount, answers, subject = "General Aptitude", topic = "Practice" } = data;
 
     // 1. Find or Create a Practice Assessment
     let assessment = await prisma.assessment.findFirst({
@@ -109,6 +109,7 @@ export const QuestionService = {
           topic,
           scheduledAt: new Date(),
           duration: 30,
+          resultsReleased: true,
           createdById: faculty ? faculty.id : userId, // Fallback to current user if no faculty
         }
       });
@@ -124,6 +125,7 @@ export const QuestionService = {
         totalCount,
         timeTaken: data.timeTaken || 0,
         answers: answers || {},
+        questionsSnapshot: data.questions || null,
       },
       include: { assessment: true }
     });

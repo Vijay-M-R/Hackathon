@@ -80,6 +80,7 @@ export const generateAITest = async (subject, topic, count = 10) => {
     return (questions || []).map(q => ({
       text: q.question_text || q.text,
       answer: q.answer,
+      explanation: q.explanation || q.reasoning,
       options: q.options,
       tags: q.tags || [],
       difficulty: q.difficulty?.toUpperCase() || "MEDIUM",

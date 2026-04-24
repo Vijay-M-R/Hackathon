@@ -62,6 +62,9 @@ export const StudentAPI = {
       []
     ),
 
+  getAttempt: (id: string) =>
+    apiClient.get(`/assessments/attempts/${id}`).then(res => res.data.data),
+
 
   quiz: (id?: string) =>
     withFallback<QuizQuestion[]>(
@@ -249,6 +252,20 @@ export const AptitudeAPI = {
 
   submitPractice: (payload: any) =>
     apiClient.post("/questions/submit-practice", payload).then(res => res.data),
+
+  history: () =>
+    apiClient.get("/assessments/attempts").then(res => 
+      (res.data.data || [])
+        .filter((a: any) => (a.assessment.subject || "").toLowerCase().includes("aptitude"))
+        .map((a: any) => ({
+          id: a.id,
+          topic: a.assessment.topic || "General Aptitude",
+          score: a.score,
+          correct: a.correctCount,
+          total: a.totalCount,
+          date: new Date(a.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        }))
+    ),
 };
 
 // ============= UTIL =============
