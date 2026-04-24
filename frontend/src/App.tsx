@@ -40,6 +40,8 @@ import InterviewRoom from "./pages/InterviewRoom";
 import NotFound from "./pages/NotFound";
 
 
+import StudentAptitude from "./pages/student/StudentAptitude";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -61,6 +63,7 @@ const App = () => (
             {/* Student */}
             <Route path="/student" element={<ProtectedRoute allowedRoles={["STUDENT"]}><StudentDashboard /></ProtectedRoute>} />
             <Route path="/student/tests" element={<ProtectedRoute allowedRoles={["STUDENT"]}><StudentTests /></ProtectedRoute>} />
+            <Route path="/student/aptitude" element={<ProtectedRoute allowedRoles={["STUDENT"]}><StudentAptitude /></ProtectedRoute>} />
             <Route path="/student/training" element={<ProtectedRoute allowedRoles={["STUDENT"]}><StudentTraining /></ProtectedRoute>} />
             <Route path="/student/drives" element={<ProtectedRoute allowedRoles={["STUDENT"]}><StudentDrives /></ProtectedRoute>} />
             <Route path="/student/test/:id" element={<ProtectedRoute allowedRoles={["STUDENT"]}><TakeTest /></ProtectedRoute>} />

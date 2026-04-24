@@ -44,6 +44,7 @@ const MENUS: Record<Role, MenuGroup[]> = {
       items: [
         { title: "Dashboard", url: "/student", icon: LayoutDashboard },
         { title: "My Tests", url: "/student/tests", icon: BookOpen },
+        { title: "Aptitude", url: "/student/aptitude", icon: ClipboardList },
         { title: "Training", url: "/student/training", icon: Sparkles },
         { title: "Drives", url: "/student/drives", icon: Briefcase },
         { title: "Mock Interview", url: "/student/interview", icon: MessageSquare },

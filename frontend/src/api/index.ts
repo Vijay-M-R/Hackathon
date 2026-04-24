@@ -231,5 +231,25 @@ export const AssessmentAPI = {
     withFallback<any[]>(() => apiClient.get(`/assessments/${assessmentId}/attempts/all`), []),
 };
 
+// ============= APTITUDE =============
+export const AptitudeAPI = {
+  generate: (topic = "General Aptitude") =>
+    apiClient.post("/questions/generate", { subject: "Aptitude", topic, count: 10 }).then(res => res.data),
+
+  extract: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiClient.post("/questions/extract", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then(res => res.data);
+  },
+
+  save: (questions: any[]) =>
+    apiClient.post("/questions/save", { questions }).then(res => res.data),
+
+  submitPractice: (payload: any) =>
+    apiClient.post("/questions/submit-practice", payload).then(res => res.data),
+};
+
 // ============= UTIL =============
 export const facultyList: FacultyMember[] = [];
