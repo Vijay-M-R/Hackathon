@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { apiClient } from "@/api/client";
 
 interface Props {
-  role: "student" | "faculty" | "placement";
+  role: "student" | "faculty" | "placement" | "company";
   title: string;
   subtitle: string;
   icon: LucideIcon;

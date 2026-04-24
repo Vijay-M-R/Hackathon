@@ -12,6 +12,7 @@ import notificationRoutes from "./routes/notification.routes.js";
 import reportsRoutes from "./routes/reports.routes.js";
 import interviewRoutes from "./routes/interview.routes.js";
 import trainingRoutes from "./routes/training.routes.js";
+import companyRoutes from "./routes/company.routes.js";
 
 
 const app = express();
@@ -19,9 +20,7 @@ connectToDB();
 
 app.use(express.json());
 app.use(cors({
-  origin: function (origin, callback) {
-    callback(null, origin || true);
-  },
+  origin: process.env.FRONTEND_URL || "http://localhost:8080",
   credentials: true,
 }));
 app.use(cookieParser());
@@ -36,6 +35,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/interviews", interviewRoutes);
 app.use("/api/training", trainingRoutes);
+app.use("/api/company", companyRoutes);
 
 
 export default app;

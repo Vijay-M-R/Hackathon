@@ -17,7 +17,12 @@ export async function loginUser({ email, password, requiredRole }) {
     };
   }
 
-  const accessToken = generateAccessToken({ id: user.id, email: user.email, role: user.role });
+  const accessToken = generateAccessToken({ 
+    id: user.id, 
+    email: user.email, 
+    role: user.role,
+    companyId: user.companyId 
+  });
   const refreshToken = generateRefreshToken({ id: user.id });
 
   await prisma.user.update({
@@ -61,7 +66,12 @@ export async function refreshUserToken(oldToken) {
       throw { status: 403, message: "Invalid refresh token" };
     }
 
-    const accessToken = generateAccessToken({ id: user.id, email: user.email, role: user.role });
+    const accessToken = generateAccessToken({ 
+      id: user.id, 
+      email: user.email, 
+      role: user.role,
+      companyId: user.companyId
+    });
     const newRefreshToken = generateRefreshToken({ id: user.id });
 
     await prisma.user.update({
@@ -91,13 +101,54 @@ export async function getUserProfile(userId) {
     where: { id: userId },
     select: { 
       id: true, email: true, role: true, fullName: true, department: true, usn: true,
+      collegeName: true,
       mentorId: true,
       mentor: {
         select: { id: true, fullName: true, name: true, department: true }
       },
+      companyId: true,
+      company: {
+        select: { id: true, name: true, industry: true, website: true, description: true }
+      },
       StudentProfile: {
-        select: { cgpa: true, readinessScore: true, branch: true, placementStatus: true }
+        select: { cgpa: true, readinessScore: true, branch: true, placementStatus: true, aiFeedback: true }
       }
     },
+  });
+}
+
+export async function updateUserProfile(userId, data) {
+  const { fullName, department, collegeName, studentProfile, companyDetails } = data;
+
+  return await prisma.$transaction(async (tx) => {
+    // 1. Update basic user info
+    const user = await tx.user.update({
+      where: { id: userId },
+      data: {
+        fullName,
+        department,
+        collegeName,
+        name: fullName?.split(" ")[0]
+      }
+    });
+
+    // 2. Update StudentProfile if it exists and user is STUDENT
+    if (user.role === "STUDENT" && studentProfile) {
+      await tx.studentProfile.upsert({
+        where: { userId },
+        create: { ...studentProfile, userId },
+        update: studentProfile
+      });
+    }
+
+    // 3. Update Company if user is COMPANY
+    if (user.role === "COMPANY" && user.companyId && companyDetails) {
+      await tx.company.update({
+        where: { id: user.companyId },
+        data: companyDetails
+      });
+    }
+
+    return user;
   });
 }

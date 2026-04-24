@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { GraduationCap, Users, Briefcase, ArrowLeft } from "lucide-react";
+import { GraduationCap, Users, Briefcase, Building2, ArrowLeft } from "lucide-react";
 
 const roles = [
   {
@@ -21,11 +21,19 @@ const roles = [
   },
   {
     id: "placement",
-    title: "I'm a Placement Officer",
+    title: "Placement Officer",
     desc: "Match students to companies, generate shortlists, and track placement trends.",
     icon: Briefcase,
     href: "/placement/login",
     accent: "from-primary/20 to-primary/5",
+  },
+  {
+    id: "company",
+    title: "Recruiter / Company",
+    desc: "Register your college drive, send requirements, and hire top talent.",
+    icon: Building2,
+    href: "/auth/company/login",
+    accent: "from-success/20 to-success/5",
   },
 ];
 
@@ -65,7 +73,7 @@ const LoginSelection = () => {
           Access your personalized placement dashboard by selecting your role below.
         </p>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {roles.map((r, i) => (
             <motion.div
               key={r.id}

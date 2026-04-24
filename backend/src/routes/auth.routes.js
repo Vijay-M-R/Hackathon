@@ -11,5 +11,6 @@ authRouter.post("/reset-password", authController.resetPassword);
 
 authRouter.use(authenticate);
 authRouter.get("/me", authController.getMe);
+authRouter.patch("/profile", authController.updateProfile);
 
 export default authRouter;

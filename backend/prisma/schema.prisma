@@ -7,100 +7,98 @@ datasource db {
 }
 
 model User {
-  id                  String          @id @default(uuid())
-  email               String          @unique
+  id                  String              @id @default(uuid())
+  email               String              @unique
   password            String
-  role                Role            @default(STUDENT)
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  role                Role                @default(STUDENT)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
   refreshToken        String?
   fullName            String?
   name                String?
-  usn                 String?         @unique
+  usn                 String?             @unique
   department          String?
-  subjects            String[]        @default([])
+  collegeName         String?
+  subjects            String[]            @default([])
   mentorId            String?
-  mentor              User?           @relation("Mentees", fields: [mentorId], references: [id])
-  mentees             User[]          @relation("Mentees")
-  StudentProfile      StudentProfile?
-  questions           Question[]
-  createdAssessments  Assessment[]    @relation("CreatedAssessments")
-  assignedAssessments Assessment[]    @relation("AssignedAssessments")
+  companyId           String?
+  createdAssessments  Assessment[]        @relation("CreatedAssessments")
   assessmentAttempts  AssessmentAttempt[]
-  appliedDrives       PlacementDrive[] @relation("DriveApplications")
+  interviewsAsFaculty MockInterview[]     @relation("FacultyInterviews")
+  interviewsAsStudent MockInterview[]     @relation("StudentInterviews")
   notifications       Notification[]
-  
-  // New: Interview relationships
-  interviewsAsStudent MockInterview[]  @relation("StudentInterviews")
-  interviewsAsFaculty MockInterview[]  @relation("FacultyInterviews")
+  questions           Question[]
+  StudentProfile      StudentProfile?
+  company             Company?            @relation(fields: [companyId], references: [id])
+  mentor              User?               @relation("Mentees", fields: [mentorId], references: [id])
+  mentees             User[]              @relation("Mentees")
+  assignedAssessments Assessment[]        @relation("AssignedAssessments")
+  appliedDrives       PlacementDrive[]    @relation("DriveApplications")
 }
 
 model Notification {
   id        String   @id @default(uuid())
   title     String
   message   String
-  type      String   @default("INFO") 
+  type      String   @default("INFO")
   read      Boolean  @default(false)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Question {
   id           String       @id @default(uuid())
   text         String
   answer       String
-  explanation  String?      @db.Text
-  options      Json?    
-  type         String       @default("MCQ") 
+  options      Json?
+  type         String       @default("MCQ")
   subject      String?
   topic        String?
-  difficulty   String?  
+  difficulty   String?
   isVisible    Boolean      @default(false)
-  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
   uploadedById String
-  tags         Tag[]        @relation("QuestionTags")
-  assessments  Assessment[] @relation("AssessmentQuestions")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+  explanation  String?
+  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+  assessments  Assessment[] @relation("AssessmentQuestions")
+  tags         Tag[]        @relation("QuestionTags")
 }
 
 model Assessment {
-  id           String     @id @default(uuid())
-  title        String
-  description  String?
-  type         String     
-  subject      String?
-  topic        String?
-  scheduledAt  DateTime
-  duration     Int        
-  questions    Question[] @relation("AssessmentQuestions")
-  createdById  String
-  createdBy    User       @relation("CreatedAssessments", fields: [createdById], references: [id])
-  students     User[]     @relation("AssignedAssessments")
-  attempts     AssessmentAttempt[]
-  resultsReleased Boolean  @default(false)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id              String              @id @default(uuid())
+  title           String
+  description     String?
+  type            String
+  subject         String?
+  topic           String?
+  scheduledAt     DateTime
+  duration        Int
+  createdById     String
+  resultsReleased Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  createdBy       User                @relation("CreatedAssessments", fields: [createdById], references: [id])
+  attempts        AssessmentAttempt[]
+  questions       Question[]          @relation("AssessmentQuestions")
+  students        User[]              @relation("AssignedAssessments")
 }
 
 model AssessmentAttempt {
-  id              String     @id @default(uuid())
-  score           Float
-  correctCount    Int
-  totalCount      Int
-  timeTaken       Int        // in seconds
-  focusLossCount  Int        @default(0)
-  answers         Json       // questionId -> response
-  
-  userId          String
-  user            User       @relation(fields: [userId], references: [id])
-  
-  assessmentId    String
-  assessment      Assessment @relation(fields: [assessmentId], references: [id])
+  id                String     @id @default(uuid())
+  score             Float
+  correctCount      Int
+  totalCount        Int
+  timeTaken         Int
+  focusLossCount    Int        @default(0)
+  answers           Json
+  userId            String
+  assessmentId      String
+  createdAt         DateTime   @default(now())
   questionsSnapshot Json?
-  
-  createdAt       DateTime   @default(now())
+  assessment        Assessment @relation(fields: [assessmentId], references: [id])
+  user              User       @relation(fields: [userId], references: [id])
 }
 
 model Company {
@@ -114,34 +112,50 @@ model Company {
   minCode        Float?           @default(70.0)
   branches       String[]
   requiredSkills String[]
-  
   industry       String?
   description    String?
   logoUrl        String?
   website        String?
-  drives         PlacementDrive[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
+  requests       InboundRequest[]
+  drives         PlacementDrive[]
+  users          User[]
+}
+
+model InboundRequest {
+  id             String        @id @default(uuid())
+  title          String
+  description    String?
+  ctc            String?
+  minCgpa        Float?
+  minReadiness   Float?
+  requiredSkills String[]
+  status         RequestStatus @default(PENDING)
+  companyId      String
+  targetCollege  String?
+  poDecisionAt   DateTime?
+  poFeedback     String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  company        Company       @relation(fields: [companyId], references: [id])
 }
 
 model PlacementDrive {
-  id           String     @id @default(uuid())
-  title        String
-  description  String?
-  date         DateTime
-  location     String?
-  role         String?    // e.g. Software Engineer
-  type         String     @default("FULL_TIME") // FULL_TIME, INTERNSHIP
-  status       String     @default("UPCOMING") // UPCOMING, ACTIVE, COMPLETED
-  salary       String?
-  
-  companyId    String
-  company      Company    @relation(fields: [companyId], references: [id])
-  
-  students     User[]     @relation("DriveApplications")
-  
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  date        DateTime
+  location    String?
+  role        String?
+  type        String   @default("FULL_TIME")
+  status      String   @default("UPCOMING")
+  salary      String?
+  companyId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id])
+  students    User[]   @relation("DriveApplications")
 }
 
 model Tag {
@@ -151,7 +165,7 @@ model Tag {
 }
 
 model StudentProfile {
-  id              String  @id
+  id              String  @id @default(uuid())
   userId          String  @unique
   aptitudeScore   Float?
   codingScore     Float?
@@ -162,10 +176,69 @@ model StudentProfile {
   branch          String?
   semester        Int?
   readinessScore  Float?
-  interviewScore  Float?  @default(0)
   aiFeedback      String?
   placementStatus String  @default("UNPLACED")
+  interviewScore  Float?  @default(0)
   User            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MockInterview {
+  id           String             @id @default(uuid())
+  title        String
+  type         InterviewType      @default(AI)
+  mode         InterviewMode      @default(TECHNICAL)
+  status       InterviewStatus    @default(SCHEDULED)
+  studentId    String
+  facultyId    String?
+  overallScore Float              @default(0)
+  analysis     Json?
+  feedback     String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  scheduledAt  DateTime           @default(now())
+  messages     InterviewMessage[]
+  faculty      User?              @relation("FacultyInterviews", fields: [facultyId], references: [id])
+  student      User               @relation("StudentInterviews", fields: [studentId], references: [id])
+}
+
+model InterviewMessage {
+  id          String        @id @default(uuid())
+  interviewId String
+  text        String
+  createdAt   DateTime      @default(now())
+  senderName  String
+  senderRole  String
+  interview   MockInterview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}
+
+model TrainingModuleProgress {
+  id              String   @id @default(uuid())
+  userId          String
+  moduleKey       String
+  questionsRead   Int      @default(0)
+  readQuestionIds String[] @default([])
+  completed       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, moduleKey])
+}
+
+model TrainingTestResult {
+  id           String   @id @default(uuid())
+  userId       String
+  moduleKey    String
+  score        Float
+  correctCount Int
+  totalCount   Int
+  answers      Json
+  createdAt    DateTime @default(now())
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum InterviewType {
@@ -185,68 +258,9 @@ enum InterviewStatus {
   COMPLETED
 }
 
-model MockInterview {
-  id           String          @id @default(uuid())
-  title        String
-  type         InterviewType   @default(AI)
-  mode         InterviewMode   @default(TECHNICAL)
-  status       InterviewStatus @default(SCHEDULED)
-  scheduledAt  DateTime        @default(now())
-  
-  studentId    String
-  student      User            @relation("StudentInterviews", fields: [studentId], references: [id])
-  
-  facultyId    String?
-  faculty      User?           @relation("FacultyInterviews", fields: [facultyId], references: [id])
-  
-  overallScore Float           @default(0)
-  analysis     Json?           
-  feedback     String?
-  
-  messages     InterviewMessage[]
-  
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-}
-
-model InterviewMessage {
-  id          String        @id @default(uuid())
-  interviewId String
-  interview   MockInterview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  
-  senderRole  String        
-  senderName  String
-  text        String        @db.Text
-  
-  createdAt   DateTime      @default(now())
-}
-
-model TrainingModuleProgress {
-  id               String   @id @default(uuid())
-  userId           String
-  moduleKey        String
-  questionsRead    Int      @default(0)
-  readQuestionIds  String[] @default([])
-  completed        Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  @@unique([userId, moduleKey])
-}
-
-model TrainingTestResult {
-  id           String   @id @default(uuid())
-  userId       String
-  moduleKey    String
-  score        Float
-  correctCount Int
-  totalCount   Int
-  answers      Json
-  createdAt    DateTime @default(now())
-}
-
 enum Role {
   STUDENT
   FACULTY
   PLACEMENT
+  COMPANY
 }

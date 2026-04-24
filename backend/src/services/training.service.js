@@ -220,7 +220,8 @@ async function generateModuleTest(userId, moduleKey) {
 
   try {
     // 1. Call AI Service to generate the test
-    const aiResponse = await fetch("http://localhost:8000/generate-test", {
+    const AI_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
+    const aiResponse = await fetch(`${AI_URL}/generate-test`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subject, topic, count: 10 })

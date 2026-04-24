@@ -108,7 +108,7 @@ const FacultyDashboard = () => {
     <DashboardLayout
       role="faculty"
       title={me && me.name ? `Welcome back, Prof. ${me.name.split(" ").slice(-1)[0]}` : "Faculty Workspace"}
-      subtitle={me ? `${me.department || "CSE"} Department` : "Manage your students and assessments"}
+      subtitle={me ? `${me.department || "CSE"} Department • ${me.collegeName || "PlaceReady Institute"}` : "Manage your students and assessments"}
       actions={
         <Link to="/faculty/schedule">
           <Button variant="outline" size="sm" className="h-8 text-xs border-border/60 hover:border-primary/40">

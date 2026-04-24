@@ -1,5 +1,9 @@
 import express from "express";
-import { getDrives, createDrive, applyToDrive, getDriveApplicants, updateApplicantStatus, getTrends } from "../controllers/drive.controller.js";
+import { 
+  getDrives, createDrive, applyToDrive, getDriveApplicants, 
+  updateApplicantStatus, getTrends, getInboundRequests, handleInboundRequest,
+  getColleges
+} from "../controllers/drive.controller.js";
 import { getCompanies, createCompany } from "../controllers/company.controller.js";
 import { authenticate, authorize } from "../middleware/auth.middleware.js";
 
@@ -8,11 +12,25 @@ const router = express.Router();
 router.get("/companies", authenticate, getCompanies);
 router.post("/companies", authenticate, authorize("PLACEMENT"), createCompany);
 
+router.get("/colleges", authenticate, getColleges);
+
 router.get("/drives", authenticate, getDrives);
 router.post("/drives", authenticate, authorize("PLACEMENT"), createDrive);
+router.patch("/drives/:id", authenticate, authorize("COMPANY"), async (req, res) => {
+  const { updateDrive } = await import("../controllers/drive.controller.js");
+  return updateDrive(req, res);
+});
+router.get("/company-drives", authenticate, authorize("COMPANY"), async (req, res) => {
+  const { getCompanyDrives } = await import("../controllers/drive.controller.js");
+  return getCompanyDrives(req, res);
+});
+
 router.post("/drives/:id/apply", authenticate, authorize("STUDENT"), applyToDrive);
-router.get("/drives/:id/applicants", authenticate, authorize("PLACEMENT"), getDriveApplicants);
-router.patch("/drives/:driveId/applicants/:studentId", authenticate, authorize("PLACEMENT"), updateApplicantStatus);
+router.get("/drives/:id/applicants", authenticate, authorize("PLACEMENT", "COMPANY"), getDriveApplicants);
+router.patch("/drives/:driveId/applicants/:studentId", authenticate, authorize("PLACEMENT", "COMPANY"), updateApplicantStatus);
+
+router.get("/requests", authenticate, authorize("PLACEMENT"), getInboundRequests);
+router.patch("/requests/:id", authenticate, authorize("PLACEMENT"), handleInboundRequest);
 
 router.get("/trends", authenticate, authorize("PLACEMENT"), getTrends);
 

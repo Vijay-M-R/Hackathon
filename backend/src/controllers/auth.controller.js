@@ -47,7 +47,20 @@ export async function refreshToken(req, res) {
 export async function getMe(req, res) {
     try {
         const user = await authService.getUserProfile(req.user.id);
-        return success(res, { user });
+        return success(res, user); // Remove extra nesting if possible
+    } catch (error) {
+        return apiError(res, error.message, 400);
+    }
+}
+
+export async function updateProfile(req, res) {
+    try {
+        const allowedRoles = ["PLACEMENT", "COMPANY"];
+        if (!allowedRoles.includes(req.user.role.toUpperCase())) {
+            return apiError(res, "You are not authorized to update your profile. Please contact admin.", 403);
+        }
+        const data = await authService.updateUserProfile(req.user.id, req.body);
+        return success(res, data, "Profile updated successfully");
     } catch (error) {
         return apiError(res, error.message, 400);
     }

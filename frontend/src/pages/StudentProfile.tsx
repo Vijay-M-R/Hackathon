@@ -83,7 +83,7 @@ const StudentProfile = ({ role }: Props) => {
     );
   }
 
-  const back = role === "faculty" ? "/faculty" : "/placement/shortlist";
+  const back = role === "faculty" ? "/faculty" : role === "placement" ? "/placement/shortlist" : "/company/drives";
   const attempts = student.attempts || [];
 
   // Build score history for line chart

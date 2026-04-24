@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   CalendarDays, MapPin, Briefcase, DollarSign, Building2, CheckCircle2, Clock, Users,
-  AlertCircle, ShieldCheck, GraduationCap, Zap
+  AlertCircle, ShieldCheck, GraduationCap, Zap, XCircle
 } from "lucide-react";
 import { PlacementAPI, StudentAPI } from "@/api";
 import { toast } from "sonner";
@@ -16,6 +16,14 @@ const STATUS_COLORS: Record<string, string> = {
   UPCOMING: "bg-warning/15 text-warning border-warning/30",
   ACTIVE:   "bg-success/15 text-success border-success/30",
   COMPLETED:"bg-secondary/40 text-muted-foreground",
+};
+
+const STUDENT_STATUS_COLORS: Record<string, string> = {
+  APPLIED: "bg-info/15 text-info border-info/30",
+  SHORTLISTED: "bg-primary/15 text-primary border-primary/30",
+  INTERVIEWED: "bg-warning/15 text-warning border-warning/30",
+  OFFERED: "bg-success/15 text-success border-success/30",
+  REJECTED: "bg-destructive/15 text-destructive border-destructive/30",
 };
 
 const StudentDrives = () => {
@@ -156,8 +164,9 @@ const StudentDrives = () => {
             {d.status === "COMPLETED" ? (
               <span className="text-xs text-muted-foreground flex items-center gap-1.5 bg-secondary/40 px-3 py-1.5 rounded-lg"><Clock className="h-3.5 w-3.5" />Drive closed</span>
             ) : d.hasApplied ? (
-              <Badge className="bg-success/10 text-success border-success/30 px-4 py-1.5 text-xs font-bold flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" /> Application Sent
+              <Badge className={cn("px-4 py-1.5 text-xs font-bold flex items-center gap-2", STUDENT_STATUS_COLORS[d.studentStatus as keyof typeof STUDENT_STATUS_COLORS])}>
+                {d.studentStatus === "REJECTED" ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                {d.studentStatus === "REJECTED" ? "Eliminated" : d.studentStatus === "OFFERED" ? "Offered" : d.studentStatus === "SHORTLISTED" ? "Shortlisted" : "Application Sent"}
               </Badge>
             ) : (
               <Button

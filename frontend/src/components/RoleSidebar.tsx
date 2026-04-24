@@ -15,6 +15,7 @@ import {
   ClipboardList,
   UserCog,
   MessageSquare,
+  Send,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,7 +33,7 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
 
-export type Role = "student" | "faculty" | "placement";
+export type Role = "student" | "faculty" | "placement" | "company";
 
 type MenuItem = { title: string; url: string; icon: any };
 type MenuGroup = { label: string; items: MenuItem[] };
@@ -48,6 +49,12 @@ const MENUS: Record<Role, MenuGroup[]> = {
         { title: "Training", url: "/student/training", icon: Sparkles },
         { title: "Drives", url: "/student/drives", icon: Briefcase },
         { title: "Mock Interview", url: "/student/interview", icon: MessageSquare },
+      ],
+    },
+    {
+      label: "Account",
+      items: [
+        { title: "My Profile", url: "/profile", icon: UserCog },
       ],
     },
   ],
@@ -67,15 +74,21 @@ const MENUS: Record<Role, MenuGroup[]> = {
         { title: "Reports", url: "/faculty/reports", icon: FileText },
       ],
     },
+    {
+      label: "Account",
+      items: [
+        { title: "My Profile", url: "/profile", icon: UserCog },
+      ],
+    },
   ],
   placement: [
     {
       label: "Pipeline",
       items: [
         { title: "Overview", url: "/placement", icon: LayoutDashboard },
+        { title: "Inbound Requests", url: "/placement/requests", icon: Send },
         { title: "Companies", url: "/placement/companies", icon: Building2 },
         { title: "Shortlisting", url: "/placement/shortlist", icon: ListChecks },
-        { title: "Drives", url: "/placement/drives", icon: CalendarDays },
       ],
     },
     {
@@ -85,6 +98,28 @@ const MENUS: Record<Role, MenuGroup[]> = {
         { title: "Reports", url: "/placement/reports", icon: FileText },
       ],
     },
+    {
+      label: "Account",
+      items: [
+        { title: "My Profile", url: "/profile", icon: UserCog },
+      ],
+    },
+  ],
+  company: [
+    {
+      label: "Recruiter Dashboard",
+      items: [
+        { title: "Overview", url: "/company", icon: LayoutDashboard },
+        { title: "My Requests", url: "/company/requests", icon: Send },
+        { title: "My Drives", url: "/company/drives", icon: CalendarDays },
+      ],
+    },
+    {
+      label: "Account",
+      items: [
+        { title: "Company Profile", url: "/profile", icon: Building2 },
+      ],
+    },
   ],
 };
 
@@ -92,6 +127,7 @@ const ROLE_META: Record<Role, { label: string; sub: string; icon: any; color: st
   student: { label: "PlaceReady", sub: "Student Portal", icon: GraduationCap, color: "from-primary to-primary/70" },
   faculty: { label: "PlaceReady", sub: "Faculty Portal", icon: UserCog, color: "from-info to-info/70" },
   placement: { label: "PlaceReady", sub: "Placement Portal", icon: Briefcase, color: "from-success to-success/70" },
+  company: { label: "PlaceReady", sub: "Partner Portal", icon: Building2, color: "from-primary to-primary/70" },
 };
 
 export function RoleSidebar({ role }: { role: Role }) {

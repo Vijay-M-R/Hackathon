@@ -20,6 +20,38 @@ export const PlacementService = {
     });
   },
 
+  async getCompanyDrives(companyId) {
+    const drives = await prisma.placementDrive.findMany({
+      where: { companyId },
+      include: {
+        students: { include: { StudentProfile: { select: { placementStatus: true } } } }
+      },
+      orderBy: { date: "desc" }
+    });
+
+    return drives.map(d => ({
+      ...d,
+      applicantCount: d.students.length,
+      offersCount: d.students.filter(s => s.StudentProfile?.placementStatus === "OFFERED").length,
+    }));
+  },
+
+  async updateDrive(driveId, companyId, data) {
+    // Security check: Ensure the drive belongs to the company
+    const drive = await prisma.placementDrive.findUnique({ where: { id: driveId } });
+    if (!drive || drive.companyId !== companyId) {
+      throw new Error("Unauthorized to update this drive");
+    }
+
+    return await prisma.placementDrive.update({
+      where: { id: driveId },
+      data: {
+        ...data,
+        date: data.date ? new Date(data.date) : undefined
+      }
+    });
+  },
+
   async getAllDrives(userId) {
     const drives = await prisma.placementDrive.findMany({
       include: {
@@ -34,6 +66,7 @@ export const PlacementService = {
       applicantCount: d.students.length,
       offersCount: d.students.filter(s => s.StudentProfile?.placementStatus === "OFFERED").length,
       hasApplied: userId ? d.students.some(s => s.id === userId) : false,
+      studentStatus: userId ? d.students.find(s => s.id === userId)?.StudentProfile?.placementStatus : null,
     }));
   },
 
@@ -146,5 +179,78 @@ export const PlacementService = {
       .map(m => monthlyData[m]);
 
     return { placementTrends };
+  },
+
+  async getColleges() {
+    const poUsers = await prisma.user.findMany({
+      where: { role: "PLACEMENT", NOT: { collegeName: null } },
+      select: { collegeName: true },
+      distinct: ["collegeName"]
+    });
+    return poUsers.map(u => u.collegeName);
+  },
+
+  async getInboundRequests(poUserId) {
+    const po = await prisma.user.findUnique({
+      where: { id: poUserId },
+      select: { collegeName: true }
+    });
+
+    return await prisma.inboundRequest.findMany({
+      where: {
+        OR: [
+          { targetCollege: po?.collegeName },
+          { targetCollege: null } // Show unassigned requests too
+        ]
+      },
+      include: { company: true },
+      orderBy: { createdAt: "desc" }
+    });
+  },
+
+  async handleInboundRequest(requestId, { status, feedback }) {
+    const request = await prisma.inboundRequest.findUnique({
+      where: { id: requestId },
+      include: { company: true }
+    });
+
+    if (!request) throw new Error("Request not found");
+
+    const updated = await prisma.inboundRequest.update({
+      where: { id: requestId },
+      data: {
+        status,
+        poFeedback: feedback,
+        poDecisionAt: new Date()
+      }
+    });
+
+    // If approved, optionally create a draft drive
+    if (status === "APPROVED") {
+      // Sync company requirements from request
+      await prisma.company.update({
+        where: { id: request.companyId },
+        data: {
+          ctc: request.ctc || "N/A",
+          minCgpa: request.minCgpa || 7.0,
+          minReadiness: request.minReadiness || 70.0,
+          requiredSkills: request.requiredSkills || []
+        }
+      });
+
+      await prisma.placementDrive.create({
+        data: {
+          title: request.title,
+          description: request.description,
+          date: new Date(), 
+          companyId: request.companyId,
+          role: request.title,
+          salary: request.ctc,
+          status: "UPCOMING"
+        }
+      });
+    }
+
+    return updated;
   }
 };

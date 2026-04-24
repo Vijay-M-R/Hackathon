@@ -178,6 +178,36 @@ export const PlacementAPI = {
 
   trends: () =>
     withFallback(() => apiClient.get("/placement/trends").then(res => res.data.data.placementTrends || res.data.data), []),
+
+  inboundRequests: () =>
+    withFallback<any[]>(() => apiClient.get("/placement/requests"), []),
+
+  handleInboundRequest: (id: string, decision: { status: string; feedback?: string }) =>
+    apiClient.patch(`/placement/requests/${id}`, decision).then(res => res.data),
+
+  colleges: () =>
+    withFallback<string[]>(() => apiClient.get("/placement/colleges"), []),
+};
+
+// ============= COMPANY =============
+export const CompanyAPI = {
+  register: (payload: any) =>
+    apiClient.post("/company/register", payload).then(res => res.data),
+
+  sendRequest: (payload: any) =>
+    apiClient.post("/company/requests", payload).then(res => res.data),
+
+  myRequests: () =>
+    withFallback<any[]>(() => apiClient.get("/company/requests"), []),
+
+  myDrives: () =>
+    withFallback<any[]>(() => apiClient.get("/placement/company-drives"), []),
+
+  updateDrive: (id: string, data: any) =>
+    apiClient.patch(`/placement/drives/${id}`, data).then(res => res.data),
+
+  driveApplicants: (id: string) =>
+    withFallback<any>(() => apiClient.get(`/placement/drives/${id}/applicants`), { applicants: [], drive: null }),
 };
 
 // ============= REPORTS =============
@@ -276,3 +306,10 @@ export const AptitudeAPI = {
 
 // ============= UTIL =============
 export const facultyList: FacultyMember[] = [];
+
+// ============= AUTH / USER =============
+export const AuthAPI = {
+  me: () => apiClient.get("/auth/me").then(res => res.data.data || res.data),
+  updateProfile: (data: any) => apiClient.patch("/auth/profile", data).then(res => res.data),
+  resetPassword: (data: any) => apiClient.post("/auth/reset-password", data).then(res => res.data),
+};
