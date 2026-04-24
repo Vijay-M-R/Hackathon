@@ -76,13 +76,7 @@ async def analyze_interview(data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/analyze-report")
-async def analyze_report(data: dict):
-    try:
-        analysis = await extractor_service.analyze_report(data)
-        return analysis
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/generate-test")
 async def generate_test(data: dict):
